@@ -1,4 +1,6 @@
 ﻿// when in doubt, check https://github.com/shinyquagsire23/MEH/blob/master/MEH.ini
+// for map data : https://datacrystal.romhacking.net/wiki/Pok%C3%A9mon_3rd_Generation
+//  ex : 24053E08B8615208CCC21D08EC6648086A0101000700020200000D0038
 namespace PokemonSolver.Memory
 {
     namespace Global
@@ -11,9 +13,33 @@ namespace PokemonSolver.Memory
 
         public abstract class RomAddress
         {
-            // public const long EmeraldMoveData = 0x1FB12C;
-            // public const long EmeraldMoveData = 0x207BC8;
-            public const long EmeraldMoveData = 0x250C04;
+            // https://gamer2020.net/adding-more-attacks-to-fire-red-and-emerald/
+            public const long EmeraldMoveNames = 0x31977C;
+            public const long EmeraldMoveData = 0x31C898;
+            public const long EmeraldMapBankHeader = 0x486578;
+            public const long EmeraldLocationNamesStart = 0x5A0B10;
+        }
+
+    }
+
+    namespace Number
+    {
+        public abstract class NumberOf
+        {
+            public const long Moves = 355;
+        }
+    }
+
+    namespace Combat
+    {
+        public abstract class UIAddress
+        {
+            public const long SelectedMove = 0x0244B0;
+        }
+
+        public abstract class UISize
+        {
+            public const ushort SelectedMove = 1;
         }
     }
 
@@ -93,7 +119,7 @@ namespace PokemonSolver.Memory
             public const ushort Pp3 = 10;
             public const ushort Pp4 = 11;
         }
-        
+
         public abstract class PokemonAttacksSize
         {
             public const ushort Move1 = 2;
@@ -121,7 +147,7 @@ namespace PokemonSolver.Memory
             public const ushort Toughness = 10;
             public const ushort Feel = 11;
         }
-        
+
         public abstract class PokemonEvsAndConditionSize
         {
             public const ushort HpEv = 1;
@@ -146,7 +172,7 @@ namespace PokemonSolver.Memory
             public const ushort IvsEggAbility = 4;
             public const ushort RibbonsObedience = 8;
         }
-        
+
         public abstract class PokemonMiscellaneousSize
         {
             public const ushort PokerusStatus = 1;
@@ -154,6 +180,66 @@ namespace PokemonSolver.Memory
             public const ushort OriginsInfo = 2;
             public const ushort IvsEggAbility = 4;
             public const ushort RibbonsObedience = 4;
+        }
+
+        public abstract class MoveSize
+        {
+            public const ushort MoveDataSize = 12;
+        }
+
+        public abstract class MapAddress
+        {
+            public const ushort MapData = 0;
+            public const ushort EventData = 4;
+            public const ushort MapScripts = 8;
+            public const ushort Connections = 12;
+            public const ushort MusicIndex = 16;
+            public const ushort MapPointerIndex = 18;
+            public const ushort LabelIndex = 20;
+            public const ushort Visibility = 21;
+            public const ushort Wheather = 22;
+            public const ushort MapType = 23;
+            public const ushort Unknown = 24;
+            public const ushort ShowLabelOnEntry = 26;
+            public const ushort BattleFieldModelId = 27;
+        }
+
+        public abstract class MapSize
+        {
+            public const ushort MapData = 4;
+            public const ushort EventData = 4;
+            public const ushort MapScripts = 4;
+            public const ushort Connections = 4;
+            public const ushort MusicIndex = 2;
+            public const ushort MapPointerIndex = 2;
+            public const ushort LabelIndex = 1;
+            public const ushort Visibility = 1;
+            public const ushort Wheather = 1;
+            public const ushort MapType = 1;
+            public const ushort Unknown = 2;
+            public const ushort ShowLabelOnEntry = 1;
+            public const ushort BattleFieldModelId = 1;
+        }
+
+        public abstract class MapDataAddress
+        {
+            public const ushort Width = 0;
+            public const ushort Height = 4;
+            public const ushort Border = 8;
+            public const ushort TileStructure = 12;
+            public const ushort GlobalTileset = 16;
+            public const ushort LocalTileset = 20;
+        }
+
+        public abstract class MapDataSize
+        {
+            public const ushort Width = 4;
+            public const ushort Height = 4;
+            public const ushort Border = 4;
+            public const ushort TileStructure = 4;
+            public const ushort GlobalTileset = 4;
+            public const ushort LocalTileset = 4;
+            public const ushort Tile = 2;
         }
     }
 }

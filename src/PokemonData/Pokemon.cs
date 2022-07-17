@@ -4,7 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
 using PokemonSolver.Memory;
+using PokemonSolver.Memory.Global;
 using PokemonSolver.Memory.Local;
+using PokemonSolver.Memory.Number;
 
 namespace PokemonSolver.PokemonData
 {
@@ -94,6 +96,12 @@ namespace PokemonSolver.PokemonData
             var moveMemory = new ArraySegment<byte>(decryptedData.ToArray(), offsets[1], 12);
             for (int i = 0; i < 4; i++)
             {
+                // uint id = Utils.GetIntegerFromByteArray(moveMemory, i * PokemonAttacksSize.Move1,
+                    // PokemonAttacksSize.Move1);
+
+                // moveDataMemory = new ArraySegment<byte>(memory.ToArray(),RomAddress.EmeraldMoveData, MoveSize.MoveDataSize);
+                // MoveData.Move moveData = new MoveData.Move();
+                
                 Moves[i] = new Move(
                     Utils.GetIntegerFromByteArray(moveMemory, i * PokemonAttacksSize.Move1, PokemonAttacksSize.Move1),
                     Utils.GetIntegerFromByteArray(

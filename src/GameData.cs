@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Linq;
 using System.Text.Json;
 using BizHawk.Client.Common;
 using PokemonSolver.Memory;
 using PokemonSolver.Memory.Global;
+using PokemonSolver.Memory.Local;
+using PokemonSolver.Memory.Number;
+using PokemonSolver.MoveData;
 using PokemonSolver.PokemonData;
 
 namespace PokemonSolver
@@ -23,14 +27,23 @@ namespace PokemonSolver
                 Team[i] = new Pokemon(memoryApi.ReadByteRange(GlobalAddress.EmeraldUsParty + i * 100, 100));
 
             memoryApi.UseMemoryDomain(MemoryDomain.ROM);
-            var move = new uint[9];
-            for (var i = 0; i < 9; i++)
+            Moves = new MoveData.Move[NumberOf.Moves];
+            for (int i = 0; i < NumberOf.Moves; i++)
             {
-                move[i] = memoryApi.ReadByte(RomAddress.EmeraldMoveData + i);
+                Moves[i] = new MoveData.Move(memoryApi.ReadByteRange(RomAddress.EmeraldMoveData + i * MoveSize.MoveDataSize, MoveSize.MoveDataSize));
             }
-
-            debug = String.Join("\n", move);
             
+            // var move = new uint[9];
+            // for (var i = 0; i < 9; i++)
+            // {
+                // move[i] = memoryApi.ReadByte(RomAddress.EmeraldMoveData + 12 + i);
+            // }
+
+            debug = String.Join("\n", Moves.Select(m => m.ToString()));
+
+            // debug = Utils.GetStringFromByteArray(memoryApi.ReadByteRange(RomAddress.EmeraldMoveData, 4615), true);
+            // debug = "debug est OK, c'est ton adresse qui est pourrie";
+
             memoryApi.UseMemoryDomain(oldDomain);
         }
 

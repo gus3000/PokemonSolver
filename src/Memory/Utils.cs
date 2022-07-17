@@ -3,6 +3,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using BizHawk.Client.Common;
+using BizHawk.Common;
+using PokemonSolver.Memory.Global;
 
 namespace PokemonSolver.Memory
 {
@@ -10,7 +13,7 @@ namespace PokemonSolver.Memory
     {
         public static readonly string[] CHARSET = new string[]
         {
-            "&nbsp;",
+            " ",
             "À",
             "Á",
             "Â",
@@ -262,7 +265,7 @@ namespace PokemonSolver.Memory
             "",
             "",
         };
-        
+
         public static readonly string[] Order =
         {
             "GAEM",
@@ -291,13 +294,38 @@ namespace PokemonSolver.Memory
             "MEAG",
         };
 
-        public static string GetStringFromByteArray(IEnumerable<byte> array)
+        public static byte[] getByteArrayFromString(string s)
+        {
+            // Log($"converting {s}");
+            byte[] convertedPattern = new byte[s.Length];
+            for (int i = 0; i < s.Length; i++)
+            {
+                convertedPattern[i] = (byte)Array.IndexOf(CHARSET, $"{s[i]}");
+                // Log($"[{i}] {s[i]} -> {convertedPattern[i]}");
+            }
+
+            return convertedPattern;
+        }
+
+        public static string GetStringFromByteArray(IEnumerable<byte> array, bool fullLength = false)
         {
             StringBuilder sb = new StringBuilder();
             foreach (byte b in array)
             {
-                if (b == 0 || b >= CHARSET.Length)
+                if (b == 255)
+                {
                     break;
+                }
+                else if (b > CHARSET.Length)
+                {
+                    if (!fullLength)
+                    {
+                        break;
+                    }
+
+                    Utils.Log($"unknown char {b}");
+                    sb.Append('?');
+                }
                 else
                     sb.Append(CHARSET[b]);
             }
@@ -311,17 +339,33 @@ namespace PokemonSolver.Memory
             return GetStringFromByteArray(new ArraySegment<byte>(array.ToArray(), index, size));
         }
 
-        public static uint GetIntegerFromByteArray(IList<byte> array, int index, int size)
+        public static uint GetIntegerFromByteArray(IList<byte> array, int index = 0, int size = -1,
+            bool bigEndian = false)
         {
+            if (size <= -1)
+                size = array.Count;
             uint sum = 0;
             for (int i = 0; i < size; i++)
             {
                 sum *= 256;
-                sum += array[index + size - 1 - i];
+                sum += array[index + (bigEndian ? i : size - 1 - i)];
             }
 
             // return array[index];
             return sum;
+        }
+
+        public static long getBits(IList<byte> bytes, int index = 0, int size = -1)
+        {
+            if (size == -1)
+                size = bytes.Count * 8;
+
+            var bytesFullSize = bytes.Count * 8;
+            long fullNumber = GetIntegerFromByteArray(bytes, 0, -1, true);
+            // Utils.Log($"received :{toBinary(fullNumber, bytesFullSize)}, index {index}, size {size}");
+            // Utils.Log($"truncated left :{toBinary(fullNumber & ((1 << (bytesFullSize - index)) - 1), bytesFullSize)}");
+            // Utils.Log($"truncated right :{toBinary((fullNumber & ((1 << (bytesFullSize - index)) - 1)) >> (bytesFullSize - (index + size)), bytesFullSize)}");
+            return (fullNumber & ((1 << (bytesFullSize - index)) - 1)) >> (bytesFullSize - (index + size));
         }
 
         public static IList<byte> GetByteArrayFromInteger(uint intToConvert, int size)
@@ -336,11 +380,81 @@ namespace PokemonSolver.Memory
             return bytes;
         }
 
+        public static string GetLocationLabelHorriblyInefficiently(IMemoryApi api, uint index)
+        {
+            var pointer = RomAddress.EmeraldLocationNamesStart;
+            var currentIndex = 0;
+
+            while (currentIndex < index)
+            {
+                if (api.ReadByte(pointer++) == 0xFF)
+                    currentIndex++;
+            }
+
+            return GetStringFromByteArray(api.ReadByteRange(pointer, 50));
+        }
+
+        public static void ReadAllLabels(IMemoryApi api)
+        {
+            var pointer = RomAddress.EmeraldLocationNamesStart;
+            int debugMax = 0;
+            bool end = false;
+            while (!end)
+            {
+                var bytes = new List<byte>();
+
+                uint b = api.ReadByte(pointer++);
+                if (b == 0)
+                {
+                    end = true;
+                    break;
+                }
+
+                for (; b != 0xff; pointer++)
+                {
+                    bytes.Add((byte)b);
+                    b = api.ReadByte(pointer);
+                    // Utils.Log($"b = {b:x}");
+
+                    // if (debugMax++ > 100)
+                    // return;
+                }
+
+                Utils.Log(Utils.GetStringFromByteArray(bytes));
+            }
+        }
+
         public static string GetEncryptedDataOrder(byte personality)
         {
             return Order[personality % 24];
         }
 
+        public static string ToBinary(long n, int size = -1)
+        {
+            var bin = Convert.ToString(n, 2);
+            if (size != -1 && size > bin.Length)
+            {
+                bin = bin.PadLeft(size, '0');
+            }
 
+            return $"0b{bin}";
+        }
+
+        public static string ToBinary(IList<byte> bytes)
+        {
+            StringBuilder sb = new StringBuilder(bytes.Count * 8 + 2);
+            sb.Append("0b");
+            foreach (var b in bytes)
+            {
+                sb.Append(Convert.ToString(b, 2).PadLeft(8, '0'));
+            }
+
+            return sb.ToString();
+        }
+
+        public static void Log(string? msg)
+        {
+            BizHawk.Common.Log.Note("Debug", msg ?? "null");
+        }
     }
 }

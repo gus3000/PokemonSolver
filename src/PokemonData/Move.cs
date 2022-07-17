@@ -16,7 +16,7 @@ namespace PokemonSolver.PokemonData
 
         public override string ToString()
         {
-            return String.Format("Move({0},{1})", Id, Pp);
+            return $"Move({Id},{Pp})";
         }
     }
 }
