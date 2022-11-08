@@ -22,6 +22,7 @@ namespace PokemonSolver
         public GameData(IMemoryApi memoryApi)
         {
             var oldDomain = memoryApi.GetCurrentMemoryDomain();
+            // memoryApi.UseMemoryDomain(MemoryDomain.EWRAM);
             Team = new Pokemon[6];
             for (int i = 0; i < 6; i++)
                 Team[i] = new Pokemon(memoryApi.ReadByteRange(GlobalAddress.EmeraldUsParty + i * 100, 100));

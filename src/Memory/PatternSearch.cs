@@ -15,11 +15,11 @@ namespace PokemonSolver.Memory
 
         public PatternSearch(IMemoryApi memoryApi)
         {
-            var oldDomain = memoryApi.GetCurrentMemoryDomain();
-            memoryApi.UseMemoryDomain(MemoryDomain.ROM);
-            rom = memoryApi.ReadByteRange(0, LastRomAddress); // just specify domain in this call ?
+            // var oldDomain = memoryApi.GetCurrentMemoryDomain();
+            // memoryApi.UseMemoryDomain(MemoryDomain.ROM);
+            rom = memoryApi.ReadByteRange(0, LastRomAddress, MemoryDomain.ROM);
 
-            memoryApi.UseMemoryDomain(oldDomain);
+            // memoryApi.UseMemoryDomain(oldDomain);
         }
 
         public IEnumerable<int> searchForByteArray(byte[] bytePattern, int start = 0, int end = LastRomAddress)

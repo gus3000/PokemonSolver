@@ -9,6 +9,8 @@ namespace PokemonSolver.Memory
         {
             //GLOBAL
             public const long EmeraldUsParty = 0x020244EC;
+            public const long EmeraldCurrentMapBank = 0x0322E4;
+            public const long EmeraldCurrentMapNumber = 0x0322E5;
         }
 
         public abstract class RomAddress

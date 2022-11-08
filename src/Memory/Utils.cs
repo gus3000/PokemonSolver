@@ -387,11 +387,11 @@ namespace PokemonSolver.Memory
 
             while (currentIndex < index)
             {
-                if (api.ReadByte(pointer++) == 0xFF)
+                if (api.ReadByte(pointer++, MemoryDomain.ROM) == 0xFF)
                     currentIndex++;
             }
 
-            return GetStringFromByteArray(api.ReadByteRange(pointer, 50));
+            return GetStringFromByteArray(api.ReadByteRange(pointer, 50, MemoryDomain.ROM));
         }
 
         public static void ReadAllLabels(IMemoryApi api)
@@ -403,7 +403,7 @@ namespace PokemonSolver.Memory
             {
                 var bytes = new List<byte>();
 
-                uint b = api.ReadByte(pointer++);
+                uint b = api.ReadByte(pointer++, MemoryDomain.ROM);
                 if (b == 0)
                 {
                     end = true;
@@ -413,7 +413,7 @@ namespace PokemonSolver.Memory
                 for (; b != 0xff; pointer++)
                 {
                     bytes.Add((byte)b);
-                    b = api.ReadByte(pointer);
+                    b = api.ReadByte(pointer, MemoryDomain.ROM);
                     // Utils.Log($"b = {b:x}");
 
                     // if (debugMax++ > 100)
@@ -452,9 +452,9 @@ namespace PokemonSolver.Memory
             return sb.ToString();
         }
 
-        public static void Log(string? msg)
+        public static void Log(string? msg, bool verbose=false)
         {
-            BizHawk.Common.Log.Note("Debug", msg ?? "null");
+            BizHawk.Common.Log.Note("Debug" + (verbose ? "-verbose" : ""), msg ?? "null");
         }
     }
 }
