@@ -456,5 +456,10 @@ namespace PokemonSolver.Memory
         {
             BizHawk.Common.Log.Note("Debug" + (verbose ? "-verbose" : ""), msg ?? "null");
         }
+
+        public static void Error(string? msg)
+        {
+            BizHawk.Common.Log.Error("Debug", msg ?? "null");
+        }
     }
 }

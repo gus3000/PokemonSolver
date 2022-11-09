@@ -1,15 +1,21 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using PokemonSolver.Memory;
+using Type = PokemonSolver.Memory.Type;
 
 namespace PokemonSolver.MapData
 {
     public class Tile
     {
+        public int X { get; }
+        public int Y { get; }
         // public byte Attribute { get; }
         // public ushort TileNumber { get; }
         public byte MovementPermission { get; }
-        public Tile(List<byte> bytes)
+        public Tile(List<byte> bytes, int x, int y)
         {
+            X = x;
+            Y = y;
             // https://www.pokecommunity.com/showthread.php?t=103524 : <---- NOPE !
             // [Block-Nr-Teil-2 (1-Byte)][Pallet (1/2-byte)][Block-Nr-Teil-1 + Flip (1/2-byte)]
             // Attribute = (byte)(bytes[0] >> 2);
@@ -28,7 +34,7 @@ namespace PokemonSolver.MapData
 
         public override string ToString()
         {
-            return $"Tile(0x{MovementPermission:x})";
+            return $"Tile([{X},{Y}],0x{MovementPermission:x})";
         }
     }
 }

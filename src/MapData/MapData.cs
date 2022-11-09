@@ -44,7 +44,7 @@ namespace PokemonSolver.MapData
                         Utils.Log($"============WTF, index = {tileOffset}===================");
                     }
 
-                    var tile = new Tile(rom.ReadByteRange(tileOffset, MapDataSize.Tile, MemoryDomain.ROM));
+                    var tile = new Tile(rom.ReadByteRange(tileOffset, MapDataSize.Tile, MemoryDomain.ROM), i,j);
                     // Utils.Log($"  ({i},{j} : {index} -> 0x{tileOffset:X}) -> 0x{rom.ReadU16(tileOffset):x4} -> {tile}", true);
                     Tiles[index] = tile;
                     // Utils.Log(Tiles[index].ToString(), true);
