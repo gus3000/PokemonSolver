@@ -13,7 +13,9 @@ using BizHawk.Common;
 using PokemonSolver;
 using PokemonSolver.Algoritm;
 using PokemonSolver.Image;
+using PokemonSolver.Image.Colors;
 using PokemonSolver.Interaction;
+using PokemonSolver.MapData;
 using PokemonSolver.Memory;
 using PokemonSolver.Memory.Global;
 using PokemonSolver.PokemonData;
@@ -45,6 +47,7 @@ namespace PokemonSolver
 
         // private System.Windows.Controls currentMap;
         private StringBuilder currentStatus;
+        private List<KeyValuePair<Position,Color>> customColoredPositions;
 
         public PokemonSolverForm()
         {
@@ -66,6 +69,7 @@ namespace PokemonSolver
             Log.EnableDomain("Debug");
 
             MapView.Click += (sender, args) => OnClick(args);
+            customColoredPositions = new List<KeyValuePair<Position, Color>>();
         }
 
         public override void Restart()
@@ -123,89 +127,11 @@ namespace PokemonSolver
 
             SetVerbose(true);
             Utils.Log("Click");
-            // Log.Error("NetworkDebug",String.Join("\n",(object[])GameData.Team[0].Moves));
-            // LogMessage(GameData.debug);
-
-            // Log.Note("NetworkDebug", String.Join("\n",APIs.Memory.GetMemoryDomainList()));
-            // Log.Note("NetworkDebug", String.Join("\n",APIs.Memory.GetCurrentMemoryDomain()));
-
-            // labelInfo.Text = GameData.debug;
-
-            // LogMessage($"[{String.Join(", ", PatternSearch.searchForPokemonString("DOUBLESLAP"))}]");
-            // for (int i = 0; i < 355; i++)
-            // {
-            // const int moveNameLength = 13;
-
-            // Utils.Log(
-            // Utils.GetStringFromByteArray(
-            // APIs.Memory.ReadByteRange(
-            // RomAddress.EmeraldMoveNames + i * moveNameLength,
-            // moveNameLength,
-            // MemoryDomain.ROM
-            // ),
-            // true
-            // )
-            // );
-            // }
-            // Utils.Log(CombatEngine?.GetSelectedMove().ToString());
-
-            // for (uint i = 0; i < 4; i++)
-            // {
-            //     Utils.Log($"Select {i}");
-            //     Utils.Log(
-            //         String.Join("\n", CombatEngine.SelectMove(i))
-            //     );
-            // }
-            // Engine.HandleNextInput();
-            // APIs.Gui.DrawRectangle(50,50,100,200,Color.Aqua,Color.Chocolate,DisplaySurfaceID.EmuCore);
-            // APIs.Gui.DrawRectangle(50,50,100,200,Color.Aqua,Color.Chocolate,DisplaySurfaceID.Client);
-            // APIs.Gui.AddMessage($"Drawing info : {APIs.Gui.GetPadding()}");
-            // var result = PatternSearch.searchForByteArray(new byte[] { 1,0xc,0xc,0xc,4,4,4,4,1 });
-            // Utils.Log($"[{string.Join(",", result)}]");
-
-            // FormatMap(OverworldEngine.Maps[0]);
-
-            // labelInfo.Text = APIs.Memory.ReadU32(GlobalAddress.EmeraldCurrentMapData).ToString("X");
-            // FormatMap(OverworldEngine.getCurrentMap());
 
             OverworldEngine.ComputeMaps();
             UpdateMap();
             SetVerbose(false);
         }
-
-        // public void FormatMap(Map? map)
-        // {
-        //     if (map == null)
-        //         return;
-        //     
-        //     const int cellSize = 22;
-        //
-        //     var mapData = map.MapData;
-        //     var tiles = mapData.Tiles;
-        //     
-        //     MapView.Rows.Clear();
-        //     MapView.ColumnCount = mapData.Width;
-        //     MapView.Size = new Size(mapData.Width * cellSize, mapData.Height * cellSize);
-        //     Size = new Size(MapView.Size.Width + cellSize, MapView.Size.Height + cellSize + 50);
-        //     for (int i = 0; i < mapData.Height; i++)
-        //     {
-        //         var rowView = new DataGridViewRow();
-        //         rowView.Height = cellSize;
-        //         for (int j = 0; j < mapData.Width; j++)
-        //         {
-        //             // var cell = new DataGridViewTextBoxCell();
-        //             var cell = new DataGridViewImageCell();
-        //             // cell.Value = tiles[i * mapData.Width + j].MovementPermission.ToString("X");
-        //             cell.Value = 
-        //             rowView.Cells.Add(cell);
-        //         }
-        //
-        //         
-        //         // MapView.Rows.Add(row.ToArray());
-        //         MapView.Rows.Add(rowView);
-        //         // MapView.Rows.Add(row);
-        //     }
-        // }
 
         private System.Drawing.Image? getBitmapFromMap(Map? map)
         {
@@ -216,16 +142,16 @@ namespace PokemonSolver
             }
 
             Utils.Log($"loading map in picture : {map.Name}", true);
-            return new MapPreviewImage(map).Image;
+            return new MapPreviewImage(map, customColoredPositions).Image;
         }
 
         private void UpdateData()
         {
             // APIs.Memory.UseMemoryDomain(Domain.ROM.ToString());
             GameData = new GameData(APIs.Memory);
-            // currentStatus.Append("coucou");
             // currentStatus.Append(GameData.Team[0].Nickname);
             UpdateMap();
+            // if(OverworldEngine.)
         }
 
         private void UpdateMap()
@@ -235,6 +161,7 @@ namespace PokemonSolver
             MapView.Image = getBitmapFromMap(OverworldEngine.getCurrentMap());
             MapView.SizeMode = PictureBoxSizeMode.Zoom;
             MapView.Size = ClientSize;
+            
         }
 
         private string ReadData()
@@ -244,10 +171,6 @@ namespace PokemonSolver
 
         private void ComputeClick(object sender, EventArgs e)
         {
-            SetVerbose(true);
-            var startPosition = new Position((int)startX.Value, (int)startY.Value, (Direction)startDirection.SelectedIndex);
-            var endPosition = new Position((int)endX.Value, (int)endY.Value, (Direction)endDirection.SelectedIndex);
-            Utils.Log($"Going from ({startPosition}) to ({endPosition})");
             if (OverworldEngine == null)
             {
                 Utils.Error("wtf overworldEngine is null");
@@ -260,10 +183,26 @@ namespace PokemonSolver
                 Utils.Error("map is null");
                 return;
             }
+            
+            SetVerbose(true);
+            Position characterPosition = OverworldEngine.getCurrentPosition();
+            Utils.Log($"char position : {characterPosition}");
+            var fieldPosition = new Position((uint)startX.Value, (uint)startY.Value, (Direction)startDirection.SelectedIndex);
+
+            var startPosition = useCharacterAsStartPosition.Checked ? characterPosition : fieldPosition;
+            var endPosition = new Position((uint)endX.Value, (uint)endY.Value, (Direction)endDirection.SelectedIndex);
+            Utils.Log($"Going from ({startPosition}) to ({endPosition})");
+            
 
             var astar = new AStar(map.MapData);
             var result = astar.resolve(startPosition, endPosition);
             Utils.Log($"Result : {result?.Debug()}");
+            customColoredPositions = new List<KeyValuePair<Position,Color>>();
+            result?.Ancestors().ForEach(node =>
+            {
+                customColoredPositions.Add( new KeyValuePair<Position, Color>(node.State,CustomColors.Path));
+            });
+
             SetVerbose(false);
         }
 
@@ -291,6 +230,7 @@ namespace PokemonSolver
             System.Windows.Forms.Label endXLabel;
             System.Windows.Forms.GroupBox start;
             System.Windows.Forms.GroupBox goal;
+            this.useCharacterAsStartPosition = new System.Windows.Forms.CheckBox();
             this.startDirection = new System.Windows.Forms.ListBox();
             this.startY = new System.Windows.Forms.NumericUpDown();
             this.startX = new System.Windows.Forms.NumericUpDown();
@@ -346,6 +286,7 @@ namespace PokemonSolver
             // 
             // start
             // 
+            start.Controls.Add(this.useCharacterAsStartPosition);
             start.Controls.Add(this.startDirection);
             start.Controls.Add(startYLabel);
             start.Controls.Add(this.startY);
@@ -358,10 +299,23 @@ namespace PokemonSolver
             start.TabStop = false;
             start.Text = "start";
             // 
+            // useCharacterAsStartPosition
+            // 
+            this.useCharacterAsStartPosition.Checked = true;
+            this.useCharacterAsStartPosition.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.useCharacterAsStartPosition.Location = new System.Drawing.Point(28, 43);
+            this.useCharacterAsStartPosition.Name = "useCharacterAsStartPosition";
+            this.useCharacterAsStartPosition.Size = new System.Drawing.Size(104, 36);
+            this.useCharacterAsStartPosition.TabIndex = 5;
+            this.useCharacterAsStartPosition.Text = "use character position";
+            this.useCharacterAsStartPosition.UseVisualStyleBackColor = true;
+            this.useCharacterAsStartPosition.CheckedChanged += new System.EventHandler(this.useCharacterAsStartPosition_CheckedChanged);
+            // 
             // startDirection
             // 
+            this.startDirection.Enabled = false;
             this.startDirection.FormattingEnabled = true;
-            this.startDirection.Items.AddRange(new object[] { "Left", "Right", "Up", "Down" });
+            this.startDirection.Items.AddRange(new object[] { "Down", "Up", "Left", "Right" });
             this.startDirection.Location = new System.Drawing.Point(151, 17);
             this.startDirection.Name = "startDirection";
             this.startDirection.Size = new System.Drawing.Size(120, 56);
@@ -369,6 +323,7 @@ namespace PokemonSolver
             // 
             // startY
             // 
+            this.startY.Enabled = false;
             this.startY.Location = new System.Drawing.Point(93, 17);
             this.startY.Name = "startY";
             this.startY.Size = new System.Drawing.Size(39, 20);
@@ -377,6 +332,7 @@ namespace PokemonSolver
             // 
             // startX
             // 
+            this.startX.Enabled = false;
             this.startX.Location = new System.Drawing.Point(27, 17);
             this.startX.Name = "startX";
             this.startX.Size = new System.Drawing.Size(39, 20);
@@ -400,7 +356,7 @@ namespace PokemonSolver
             // endDirection
             // 
             this.endDirection.FormattingEnabled = true;
-            this.endDirection.Items.AddRange(new object[] { "Left", "Right", "Up", "Down" });
+            this.endDirection.Items.AddRange(new object[] { "Down", "Up", "Left", "Right" });
             this.endDirection.Location = new System.Drawing.Point(151, 17);
             this.endDirection.Name = "endDirection";
             this.endDirection.Size = new System.Drawing.Size(120, 56);
@@ -412,7 +368,7 @@ namespace PokemonSolver
             this.endY.Name = "endY";
             this.endY.Size = new System.Drawing.Size(39, 20);
             this.endY.TabIndex = 2;
-            this.endY.Value = new decimal(new int[] { 7, 0, 0, 0 });
+            this.endY.Value = new decimal(new int[] { 9, 0, 0, 0 });
             // 
             // endX
             // 
@@ -434,7 +390,7 @@ namespace PokemonSolver
             // 
             // PokemonSolverForm
             // 
-            this.ClientSize = new System.Drawing.Size(565, 672);
+            this.ClientSize = new System.Drawing.Size(565, 923);
             this.Controls.Add(goal);
             this.Controls.Add(start);
             this.Controls.Add(this.compute);
@@ -448,6 +404,8 @@ namespace PokemonSolver
             this.ResumeLayout(false);
         }
 
+        private System.Windows.Forms.CheckBox useCharacterAsStartPosition;
+
         private System.Windows.Forms.ListBox startDirection;
 
         private System.Windows.Forms.ListBox endDirection;
@@ -458,5 +416,14 @@ namespace PokemonSolver
         private System.Windows.Forms.NumericUpDown endX;
 
         private System.Windows.Forms.Button compute;
+
+        private void useCharacterAsStartPosition_CheckedChanged(object sender, EventArgs e)
+        {
+            var check = (CheckBox)sender;
+            foreach (var c in new Control[] { startX, startY, startDirection })
+            {
+                c.Enabled = !check.Checked;
+            }
+        }
     }
 }

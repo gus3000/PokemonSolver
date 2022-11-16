@@ -1,17 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
+using PokemonSolver.Debug;
 using PokemonSolver.Memory;
 using Type = PokemonSolver.Memory.Type;
 
 namespace PokemonSolver.MapData
 {
-    public class Tile
+    public class Tile : IShortStringable
     {
         public int X { get; }
+
         public int Y { get; }
+
         // public byte Attribute { get; }
         // public ushort TileNumber { get; }
         public byte MovementPermission { get; }
+
         public Tile(List<byte> bytes, int x, int y)
         {
             X = x;
@@ -24,17 +28,26 @@ namespace PokemonSolver.MapData
             // byte blockNrTeil2 = bytes[0];
             // byte pallet = (byte)Utils.getBits(bytes, 8, 4);
             // byte blockNrTeil2PlusFlip = (byte)Utils.getBits(bytes, 12, 4);
-            
+
             // Utils.Log($"  block data ({Utils.ToBinary(bytes)}): {Utils.ToBinary(blockNrTeil2,8)}, {Utils.ToBinary(pallet,4)}, {Utils.ToBinary(blockNrTeil2PlusFlip,4)}");
 
-            MovementPermission = (byte) Utils.getBits(bytes,8,6);
+            MovementPermission = (byte)Utils.getBits(bytes, 8, 6);
+        }
 
-
+        public bool canWalk()
+        {
+            return Array.Exists(new byte[] { 0, 0xC }, perm => perm == MovementPermission);
         }
 
         public override string ToString()
         {
             return $"Tile([{X},{Y}],0x{MovementPermission:x})";
+        }
+
+
+        public string ToShortString()
+        {
+            return $"({X},{Y},{MovementPermission:x})";
         }
     }
 }

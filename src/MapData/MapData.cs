@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using BizHawk.Client.Common;
 using PokemonSolver.Memory;
 using PokemonSolver.Memory.Local;
@@ -13,6 +14,7 @@ namespace PokemonSolver.MapData
         public ushort Height { get; }
         // public Border Border { get; }
         public Tile[] Tiles { get; }
+        public Color[] CustomColors { get; }
         // public TileSet TileSet { get; }
         
         public MapData(IMemoryApi rom, long offset)
@@ -32,6 +34,7 @@ namespace PokemonSolver.MapData
 
             var tilesData = rom.ReadByteRange(tileStructureOffset, (int)(Width * Height * MapDataSize.Tile), MemoryDomain.ROM);
             Tiles = new Tile[Width * Height];
+            CustomColors = new Color[Width * Height];
             for (int i = 0; i < Width; i++)
             {
                 for (int j = 0; j < Height; j++)
@@ -48,12 +51,15 @@ namespace PokemonSolver.MapData
                     // Utils.Log($"  ({i},{j} : {index} -> 0x{tileOffset:X}) -> 0x{rom.ReadU16(tileOffset):x4} -> {tile}", true);
                     Tiles[index] = tile;
                     // Utils.Log(Tiles[index].ToString(), true);
+
+                    CustomColors[index] = Color.Transparent;
                 }
             }
+
             // Utils.Log($" width : {rom.ReadS32(offset)} (signed) OR {rom.ReadU32(offset)} (signed)");
         }
 
-        public Tile GetTile(int x, int y)
+        public Tile GetTile(uint x, uint y)
         {
             return Tiles[y * Width + x];
         }

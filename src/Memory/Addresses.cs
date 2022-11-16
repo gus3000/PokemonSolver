@@ -5,25 +5,47 @@ namespace PokemonSolver.Memory
 {
     namespace Global
     {
-        public abstract class GlobalAddress
+        namespace Rom
         {
-            //GLOBAL
-            public const long EmeraldUsParty = 0x020244EC;
-            public const long EmeraldCurrentMapBank = 0x0322E4;
-            public const long EmeraldCurrentMapNumber = 0x0322E5;
+            public abstract class Address
+            {
+                // https://gamer2020.net/adding-more-attacks-to-fire-red-and-emerald/
+                public const long EmeraldMoveNames = 0x31977C;
+                public const long EmeraldMoveData = 0x31C898;
+                public const long EmeraldMapBankHeader = 0x486578;
+                public const long EmeraldLocationNamesStart = 0x5A0B10;
+            }
         }
 
-        public abstract class RomAddress
+        namespace Ram
         {
-            // https://gamer2020.net/adding-more-attacks-to-fire-red-and-emerald/
-            public const long EmeraldMoveNames = 0x31977C;
-            public const long EmeraldMoveData = 0x31C898;
-            public const long EmeraldMapBankHeader = 0x486578;
-            public const long EmeraldLocationNamesStart = 0x5A0B10;
-        }
+            public abstract class Address
+            {
+                public const long EmeraldUsParty = 0x020244EC;
+                public const long EmeraldCurrentMapBank = 0x0322E4;
+                public const long EmeraldCurrentMapNumber = 0x0322E5;
+            }
 
+            namespace Character
+            {
+                public abstract class Address
+                {
+                    public const long X = 0x37360;
+                    public const long Y = 0x37362;
+                    public const long Direction = 0x037370;
+                }
+
+                public abstract class Size
+                {
+                    public const ushort X = 2;
+                    public const ushort Y = 2;
+                    public const ushort Direction = 2;
+                }
+                
+            }
+        }
     }
-
+    
     namespace Number
     {
         public abstract class NumberOf

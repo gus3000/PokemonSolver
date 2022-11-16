@@ -20,7 +20,7 @@ namespace PokemonSolver.Algoritm
         public Node<Position>? resolve(Position start, Position goal)
         {
             Utils.Log("starting AStar", true);
-            const int MAX_CALC = 1000;
+            const int MAX_CALC = 10000;
             int calc = 0;
 
             var explored = new List<Node<Position>>();
@@ -30,7 +30,7 @@ namespace PokemonSolver.Algoritm
 
             do
             {
-                Utils.Log($"Checking node {currentNode.Debug()}", true);
+                // Utils.Log($"Checking node {currentNode.Debug()}", true);
                 if (Equals(currentNode.State, goal))
                 {
                     Utils.Log($"found path after {calc} nodes examined", true);
@@ -43,15 +43,16 @@ namespace PokemonSolver.Algoritm
                         continue;
 
                     var tile = _mapData.GetTile(p.X, p.Y);
-                    //TODO check permissions of tile
+                    if (!tile.canWalk())
+                        continue;
 
-                    if (!explored.Exists(node => node.State == p))
+                    if (!explored.Exists(node => Equals(node.State, p)))
                         toExplore.Enqueue(new Node<Position>(p, currentNode));
                 }
 
                 explored.Add(currentNode);
 
-                toExplore = new Queue<Node<Position>>(toExplore.OrderBy(n => n.State.MinimumDistance(goal)));
+                toExplore = new Queue<Node<Position>>(toExplore.OrderBy(n => n.Depth() + n.State.MinimumDistance(goal)));
 
                 if (calc++ > MAX_CALC)
                 {
@@ -59,6 +60,9 @@ namespace PokemonSolver.Algoritm
                     break;
                 }
 
+                if (toExplore.Count == 0)
+                    break;
+                
                 currentNode = toExplore.Dequeue();
             } while (toExplore.Count > 0);
 

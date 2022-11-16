@@ -1,10 +1,12 @@
-﻿namespace PokemonSolver.Algoritm
+﻿using PokemonSolver.Debug;
+
+namespace PokemonSolver.Algoritm
 {
     public enum Direction
     {
-        Left,
-        Right,
-        Up,
-        Down
+        Down = 1,
+        Up = 2,
+        Left = 3,
+        Right = 4,
     }
 }

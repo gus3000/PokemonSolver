@@ -2,9 +2,14 @@
 using System.Linq;
 using BizHawk.Client.Common;
 using BizHawk.Common;
+using PokemonSolver.Algoritm;
+using PokemonSolver.MapData;
 using PokemonSolver.Memory;
 using PokemonSolver.Memory.Global;
+using PokemonSolver.Memory.Global.Ram;
+using PokemonSolver.Memory.Global.Rom;
 using PokemonSolver.Memory.Local;
+using Address = PokemonSolver.Memory.Global.Rom.Address;
 
 namespace PokemonSolver.Interaction
 {
@@ -42,7 +47,7 @@ namespace PokemonSolver.Interaction
             Maps.Clear();
             Banks.Clear();
 
-            var mapBankPointer = RomAddress.EmeraldMapBankHeader;
+            var mapBankPointer = Address.EmeraldMapBankHeader;
             var banksAvailable = true;
             var totalCalculations = 0;
             while (banksAvailable)
@@ -94,12 +99,29 @@ namespace PokemonSolver.Interaction
                 Utils.Log("Banks empty, no current map", true);
                 return null;
             }
-            var map =  getMap(
-                _memoryApi.ReadS8(GlobalAddress.EmeraldCurrentMapBank,MemoryDomain.CombinedWRAM),
-                _memoryApi.ReadS8(GlobalAddress.EmeraldCurrentMapNumber,MemoryDomain.CombinedWRAM)
+
+            var map = getMap(
+                _memoryApi.ReadS8(Memory.Global.Ram.Address.EmeraldCurrentMapBank, MemoryDomain.CombinedWRAM),
+                _memoryApi.ReadS8(Memory.Global.Ram.Address.EmeraldCurrentMapNumber, MemoryDomain.CombinedWRAM)
             );
-            
+
             return map;
+        }
+
+        public Position getCurrentPosition()
+        {
+            var oldDomain = _memoryApi.GetCurrentMemoryDomain();
+            _memoryApi.UseMemoryDomain(MemoryDomain.CombinedWRAM);
+            var rawX = _memoryApi.ReadU16(Memory.Global.Ram.Character.Address.X);
+            var rawY = _memoryApi.ReadU16(Memory.Global.Ram.Character.Address.Y);
+            var rawDir = _memoryApi.ReadU16(Memory.Global.Ram.Character.Address.Direction);
+
+            _memoryApi.UseMemoryDomain(oldDomain);
+
+            var x = rawX - Border.Size;
+            var y = rawY - Border.Size;
+            Direction dir = (Direction)rawDir;
+            return new Position(x, y, dir);
         }
     }
 }

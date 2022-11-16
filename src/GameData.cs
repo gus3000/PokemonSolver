@@ -4,10 +4,13 @@ using System.Text.Json;
 using BizHawk.Client.Common;
 using PokemonSolver.Memory;
 using PokemonSolver.Memory.Global;
+using PokemonSolver.Memory.Global.Ram;
+using PokemonSolver.Memory.Global.Rom;
 using PokemonSolver.Memory.Local;
 using PokemonSolver.Memory.Number;
 using PokemonSolver.MoveData;
 using PokemonSolver.PokemonData;
+using Address = PokemonSolver.Memory.Global.Rom.Address;
 
 namespace PokemonSolver
 {
@@ -25,13 +28,13 @@ namespace PokemonSolver
             // memoryApi.UseMemoryDomain(MemoryDomain.EWRAM);
             Team = new Pokemon[6];
             for (int i = 0; i < 6; i++)
-                Team[i] = new Pokemon(memoryApi.ReadByteRange(GlobalAddress.EmeraldUsParty + i * 100, 100));
+                Team[i] = new Pokemon(memoryApi.ReadByteRange(Memory.Global.Ram.Address.EmeraldUsParty + i * 100, 100));
 
             memoryApi.UseMemoryDomain(MemoryDomain.ROM);
             Moves = new MoveData.Move[NumberOf.Moves];
             for (int i = 0; i < NumberOf.Moves; i++)
             {
-                Moves[i] = new MoveData.Move(memoryApi.ReadByteRange(RomAddress.EmeraldMoveData + i * MoveSize.MoveDataSize, MoveSize.MoveDataSize));
+                Moves[i] = new MoveData.Move(memoryApi.ReadByteRange(Address.EmeraldMoveData + i * MoveSize.MoveDataSize, MoveSize.MoveDataSize));
             }
             
             // var move = new uint[9];

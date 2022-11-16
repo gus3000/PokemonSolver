@@ -6,6 +6,7 @@ using System.Text;
 using BizHawk.Client.Common;
 using BizHawk.Common;
 using PokemonSolver.Memory.Global;
+using PokemonSolver.Memory.Global.Rom;
 
 namespace PokemonSolver.Memory
 {
@@ -382,7 +383,7 @@ namespace PokemonSolver.Memory
 
         public static string GetLocationLabelHorriblyInefficiently(IMemoryApi api, uint index)
         {
-            var pointer = RomAddress.EmeraldLocationNamesStart;
+            var pointer = Address.EmeraldLocationNamesStart;
             var currentIndex = 0;
 
             while (currentIndex < index)
@@ -396,7 +397,7 @@ namespace PokemonSolver.Memory
 
         public static void ReadAllLabels(IMemoryApi api)
         {
-            var pointer = RomAddress.EmeraldLocationNamesStart;
+            var pointer = Address.EmeraldLocationNamesStart;
             int debugMax = 0;
             bool end = false;
             while (!end)

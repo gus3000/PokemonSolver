@@ -1,15 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
+using PokemonSolver.Debug;
 
 namespace PokemonSolver.Algoritm
 {
-    public class Position
+    public class Position: IShortStringable
     {
-        public int X { get; }
-        public int Y { get; }
+        public uint X { get; }
+        public uint Y { get; }
         public Direction Direction { get; }
 
-        public Position(int x, int y, Direction direction)
+        public Position(uint x, uint y, Direction direction)
         {
             X = x;
             Y = y;
@@ -47,7 +48,7 @@ namespace PokemonSolver.Algoritm
         /// <returns></returns>
         public Position Forward()
         {
-            int x = X, y = Y;
+            uint x = X, y = Y;
             switch (Direction)
             {
                 case Direction.Left:
@@ -74,6 +75,11 @@ namespace PokemonSolver.Algoritm
 
             var p = (Position)obj;
             return X == p.X && Y == p.Y && Direction == p.Direction;
+        }
+
+        public string ToShortString()
+        {
+            return $"{X},{Y},{Direction.ToString()[0]}";
         }
 
         public override string ToString()
