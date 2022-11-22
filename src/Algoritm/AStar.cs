@@ -31,7 +31,7 @@ namespace PokemonSolver.Algoritm
 
             do
             {
-                // Utils.Log($"Checking node {currentNode.Debug()}", true);
+                Utils.Log($"Checking node (dist {currentNode.Depth()},{currentNode.State.MinimumDistance(goal)}) {currentNode.Debug()}", true);
                 if (Equals(currentNode.State, goal))
                 {
                     Utils.Log($"found path after {calc} nodes examined", true);

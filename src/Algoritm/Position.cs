@@ -20,8 +20,11 @@ namespace PokemonSolver.Algoritm
 
         public float MinimumDistance(Position p)
         {
-            //TODO include direction
-            return Math.Abs(X - p.X) + Math.Abs(Y - p.Y);
+            var distX = X > p.X ? X - p.X : p.X - X;
+            var distY = Y > p.Y ? Y - p.Y : p.Y - Y;
+            var dirPenalty = Direction == p.Direction ? 0 : 1;
+            
+            return distX + distY + dirPenalty;
         }
 
         public List<Position> Neighbours()
