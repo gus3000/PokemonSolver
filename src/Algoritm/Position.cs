@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using PokemonSolver.Debug;
+using PokemonSolver.Memory;
 
 namespace PokemonSolver.Algoritm
 {
@@ -35,7 +36,9 @@ namespace PokemonSolver.Algoritm
                 }
                 else
                 {
-                    neighbours.Add(Forward());
+                    var pos = Forward();
+                    if(pos != null)
+                        neighbours.Add(pos);
                 }
             }
 
@@ -46,7 +49,7 @@ namespace PokemonSolver.Algoritm
         /// Returns a copy with one step forward
         /// </summary>
         /// <returns></returns>
-        public Position Forward()
+        public Position? Forward()
         {
             uint x = X, y = Y;
             switch (Direction)
@@ -63,8 +66,14 @@ namespace PokemonSolver.Algoritm
                 case Direction.Down:
                     y++;
                     break;
+                default:
+                    throw new ArgumentOutOfRangeException();
             }
 
+            if (x == uint.MaxValue || y == uint.MaxValue)
+            {
+                return null;
+            }
             return new Position(x, y, Direction);
         }
 

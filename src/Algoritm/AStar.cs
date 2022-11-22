@@ -19,6 +19,7 @@ namespace PokemonSolver.Algoritm
 
         public Node<Position>? resolve(Position start, Position goal)
         {
+            //FIXME bug going from 0,8 to 2,2
             Utils.Log("starting AStar", true);
             const int MAX_CALC = 10000;
             int calc = 0;
@@ -39,7 +40,7 @@ namespace PokemonSolver.Algoritm
 
                 foreach (var p in currentNode.State.Neighbours())
                 {
-                    if (p.X < 0 || p.X >= _mapData.Width || p.Y < 0 || p.Y >= _mapData.Height)
+                    if (p.X >= _mapData.Width || p.Y >= _mapData.Height)
                         continue;
 
                     var tile = _mapData.GetTile(p.X, p.Y);
