@@ -8,6 +8,9 @@
         <Optimize>true</Optimize>
     </PropertyGroup>
     <ItemGroup>
+        <AllDlls Include="$(OutputPath)*.dll" />
+    </ItemGroup>
+    <ItemGroup>
         <PackageReference Include="BenchmarkDotNet" Version="0.13.2" />
         <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.0" PrivateAssets="all" />
         <PackageReference Include="System.Text.Json" Version="6.0.5" />
@@ -18,14 +21,8 @@
         <Reference Include="BizHawk.WinForms.Controls" HintPath="$(ProjectDir)../BizHawk/dll/BizHawk.WinForms.Controls.dll" />
     </ItemGroup>
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
+        <Message Text="DLL : $(ProjectDir)../BizHawk/dll/%(Filename)%(Extension) from @(AllDlls)" Condition="%(Identity) != 'bin\Debug\net48\BenchmarkDotNet.dll'"/>
         <Copy SourceFiles="$(OutputPath)$(MSBuildProjectName).dll" DestinationFolder="$(ProjectDir)../BizHawk/ExternalTools" />
-        
-        <!--TODO refacto cette merde -->
-        <Copy SourceFiles="$(OutputPath)System.Text.Json.dll" DestinationFolder="$(ProjectDir)../BizHawk/ExternalTools" />
-        <Copy SourceFiles="$(OutputPath)Microsoft.Bcl.AsyncInterfaces.dll" DestinationFolder="$(ProjectDir)../BizHawk/ExternalTools" />
-        <Copy SourceFiles="$(OutputPath)System.Threading.Tasks.Extensions.dll" DestinationFolder="$(ProjectDir)../BizHawk/ExternalTools" />
-        <Copy SourceFiles="$(OutputPath)System.Text.Encodings.Web.dll" DestinationFolder="$(ProjectDir)../BizHawk/ExternalTools" />
-        <Copy SourceFiles="$(OutputPath)BenchmarkDotNet.dll" DestinationFolder="$(ProjectDir)../BizHawk/ExternalTools" />
-        <Copy SourceFiles="$(OutputPath)BenchmarkDotNet.Annotations.dll" DestinationFolder="$(ProjectDir)../BizHawk/ExternalTools" />
+        <Copy SourceFiles="@(AllDlls)" DestinationFolder="$(ProjectDir)../BizHawk/ExternalTools" Condition="!Exists('$(ProjectDir)../BizHawk/dll/%(Filename)%(Extension)')"/>
     </Target>
 </Project>
