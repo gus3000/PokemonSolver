@@ -39,8 +39,11 @@ namespace PokemonSolver.Interaction
         //PETALBURG CITY -> CABFCEBBC6BCCFCCC100BDC3CED3
         //LITTLEROOT TOWN -> C6C3CECEC6BFCCC9C9CE00CEC9D1C8
         //TRAINER HILL -> CECCBBC3C8BFCC00C2C3C6C6
-        public void ComputeMaps()
+        public void ComputeMaps(bool force = false)
         {
+            if (Maps.Count > 0 && !force)
+                return;
+
             var oldDomain = _memoryApi.GetCurrentMemoryDomain();
             _memoryApi.UseMemoryDomain(MemoryDomain.ROM);
 
@@ -53,13 +56,13 @@ namespace PokemonSolver.Interaction
             while (banksAvailable)
             {
                 var bank = new List<Map>();
-                Utils.Log($"[0x{mapBankPointer:X}]");
+                Utils.Log($"[0x{mapBankPointer:X}]", true);
                 var mapBankOffset = _memoryApi.ReadU24(mapBankPointer, MemoryDomain.ROM);
-                Utils.Log($" map bank start : 0x{mapBankOffset:X}");
+                Utils.Log($" map bank start : 0x{mapBankOffset:X}", true);
                 var mapHeaderPointer = mapBankOffset;
                 var next = _memoryApi.ReadU24(mapBankPointer + 4, MemoryDomain.ROM);
                 banksAvailable = (_memoryApi.ReadU8(mapBankPointer + 7, MemoryDomain.ROM) > 0);
-                Utils.Log($" next : 0x{next:X}");
+                Utils.Log($" next : 0x{next:X}", true);
 
                 if (!banksAvailable)
                     next = mapHeaderPointer +
@@ -68,13 +71,13 @@ namespace PokemonSolver.Interaction
                 while (mapHeaderPointer != next && totalCalculations++ < 1000)
                 {
                     var mapHeaderOffset = _memoryApi.ReadU24(mapHeaderPointer, MemoryDomain.ROM);
-                    Utils.Log($"  calculation {totalCalculations}");
-                    Utils.Log($"  map address : 0x{mapHeaderPointer:X}");
-                    Utils.Log($"  map header address : 0x{mapHeaderOffset:X}");
+                    Utils.Log($"  calculation {totalCalculations}", true);
+                    Utils.Log($"  map address : 0x{mapHeaderPointer:X}", true);
+                    Utils.Log($"  map header address : 0x{mapHeaderOffset:X}", true);
                     var map = new Map(_memoryApi, mapHeaderOffset);
                     Maps.Add(map);
                     bank.Add(map);
-                    Utils.Log("________________________________");
+                    Utils.Log("________________________________", true);
                     mapHeaderPointer += 4;
                 }
 
@@ -92,7 +95,7 @@ namespace PokemonSolver.Interaction
             return Banks[bank][number];
         }
 
-        public Map? getCurrentMap()
+        public Map? GetCurrentMap()
         {
             if (Banks.Count == 0)
             {
@@ -101,27 +104,35 @@ namespace PokemonSolver.Interaction
             }
 
             var map = getMap(
-                _memoryApi.ReadS8(Memory.Global.Ram.Address.EmeraldCurrentMapBank, MemoryDomain.CombinedWRAM),
-                _memoryApi.ReadS8(Memory.Global.Ram.Address.EmeraldCurrentMapNumber, MemoryDomain.CombinedWRAM)
+                (int)_memoryApi.ReadU8(Memory.Global.Ram.Address.EmeraldCurrentMapBank, MemoryDomain.CombinedWRAM),
+                (int)_memoryApi.ReadU8(Memory.Global.Ram.Address.EmeraldCurrentMapNumber, MemoryDomain.CombinedWRAM)
             );
 
             return map;
         }
 
-        public Position getCurrentPosition()
+        public Position? GetCurrentPosition()
         {
             var oldDomain = _memoryApi.GetCurrentMemoryDomain();
             _memoryApi.UseMemoryDomain(MemoryDomain.CombinedWRAM);
+
+            var mapBank = _memoryApi.ReadU8(Memory.Global.Ram.Address.EmeraldCurrentMapBank, MemoryDomain.CombinedWRAM);
+            var mapIndex = _memoryApi.ReadU8(Memory.Global.Ram.Address.EmeraldCurrentMapNumber, MemoryDomain.CombinedWRAM);
             var rawX = _memoryApi.ReadU16(Memory.Global.Ram.Character.Address.X);
             var rawY = _memoryApi.ReadU16(Memory.Global.Ram.Character.Address.Y);
             var rawDir = _memoryApi.ReadU16(Memory.Global.Ram.Character.Address.Direction);
 
             _memoryApi.UseMemoryDomain(oldDomain);
 
+            if (rawX == 0 || rawY == 0)
+            {
+                return null;
+            }
+
             var x = rawX - Border.Size;
             var y = rawY - Border.Size;
-            Direction dir = (Direction)rawDir;
-            return new Position(x, y, dir);
+            var dir = (Direction)rawDir;
+            return new Position(mapBank, mapIndex, x, y, dir, Altitude.Any); //TODO find altitude from memory
         }
     }
 }

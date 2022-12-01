@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
+using BenchmarkDotNet.Attributes;
 using PokemonSolver.MapData;
 using PokemonSolver.Memory;
 
@@ -16,12 +17,16 @@ namespace PokemonSolver.Algoritm
             _mapData = mapData;
         }
 
-
-        public Node<Position>? resolve(Position start, Position goal)
+        [Benchmark]
+        public Node<Position>? ResolveBenchmark(Position start, Position goal)
         {
-            //FIXME bug going from 0,8 to 2,2
+            return Resolve(start, goal);
+        }
+        
+        public Node<Position>? Resolve(Position start, Position goal)
+        {
             Utils.Log("starting AStar", true);
-            const int MAX_CALC = 10000;
+            Position.SetMapData(_mapData);
             int calc = 0;
 
             var explored = new List<Node<Position>>();
@@ -31,7 +36,7 @@ namespace PokemonSolver.Algoritm
 
             do
             {
-                Utils.Log($"Checking node (dist {currentNode.Depth()},{currentNode.State.MinimumDistance(goal)}) {currentNode.Debug()}", true);
+                // Utils.Log($"Checking node (dist {currentNode.Depth()},{currentNode.State.MinimumDistance(goal)}) {currentNode.Debug()}", true);
                 if (Equals(currentNode.State, goal))
                 {
                     Utils.Log($"found path after {calc} nodes examined", true);
@@ -40,13 +45,6 @@ namespace PokemonSolver.Algoritm
 
                 foreach (var p in currentNode.State.Neighbours())
                 {
-                    if (p.X >= _mapData.Width || p.Y >= _mapData.Height)
-                        continue;
-
-                    var tile = _mapData.GetTile(p.X, p.Y);
-                    if (!tile.canWalk())
-                        continue;
-
                     if (!explored.Exists(node => Equals(node.State, p)))
                         toExplore.Enqueue(new Node<Position>(p, currentNode));
                 }
@@ -55,19 +53,13 @@ namespace PokemonSolver.Algoritm
 
                 toExplore = new Queue<Node<Position>>(toExplore.OrderBy(n => n.Depth() + n.State.MinimumDistance(goal)));
 
-                if (calc++ > MAX_CALC)
-                {
-                    Utils.Log($"made more than {MAX_CALC} operations, exiting...", true);
-                    break;
-                }
-
                 if (toExplore.Count == 0)
                     break;
                 
                 currentNode = toExplore.Dequeue();
             } while (toExplore.Count > 0);
 
-
+            Utils.Log("Everything explored, no path found ; exiting...", true);
             return null;
         }
     }

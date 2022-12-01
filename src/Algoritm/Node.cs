@@ -17,11 +17,10 @@ namespace PokemonSolver.Algoritm
             Parent = parent;
             Children = new List<Node<T>>();
         }
-
-        public List<Node<T>> Ancestors()
+        public List<Node<T>> Ancestors(bool includeSelf = false)
         {
             var ancestors = new List<Node<T>>();
-            var p = Parent;
+            var p = includeSelf ? this : Parent;
             while (p != null)
             {
                 ancestors.Add(p);
@@ -41,7 +40,7 @@ namespace PokemonSolver.Algoritm
         {
             if (Parent == null)
                 return State.ToShortString();
-            return Parent.Debug() + " -> " + State.ToShortString();
+            return Parent.Debug() + "\n -> " + State.ToShortString();
         }
     }
 }

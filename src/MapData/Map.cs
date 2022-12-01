@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using BizHawk.Client.Common;
 using PokemonSolver.Memory;
 using PokemonSolver.Memory.Local;
@@ -32,7 +33,26 @@ namespace PokemonSolver.MapData
             // -> event offset
             // -> script offset
             // -> connection offset
-            Connections = new List<Connection>();
+            var connectionsOffset = rom.ReadU24(offset + MapAddress.Connections, MemoryDomain.ROM);
+            if (connectionsOffset != 0)
+            {
+                // Utils.Log($"connections Offset for {Name} : {connectionsOffset:X}",true);
+                var numberOfConnections = rom.ReadU32(connectionsOffset, MemoryDomain.ROM);
+                Connections = new List<Connection>();
+                Utils.Log($"Connections (0x{connectionsOffset:X} -> {numberOfConnections}):", true);
+                var connectionDataOffset = rom.ReadU24(connectionsOffset + 4, MemoryDomain.ROM);
+                for (var i = 0; i < numberOfConnections; i++)
+                {
+                    var conOffset = connectionDataOffset + i * MapConnectionSize.TotalSize;
+                    Utils.Log($"Connection {i} <- {conOffset:x}");
+                    Connections.Add(new Connection(rom.ReadByteRange(conOffset, MapConnectionSize.TotalSize)));
+                    Utils.Log($"\t{Connections[Connections.Count - 1].Debug()}");
+                }
+            }
+            else
+            {
+                Utils.Log($"No Connection");
+            }
         }
     }
 }

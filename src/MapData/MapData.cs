@@ -11,12 +11,17 @@ namespace PokemonSolver.MapData
     {
         public long Offset { get; }
         public ushort Width { get; }
+
         public ushort Height { get; }
+
         // public Border Border { get; }
+        public Tileset GlobalTileset { get; }
+        public Tileset LocalTileset { get; }
         public Tile[] Tiles { get; }
+
         public Color[] CustomColors { get; }
         // public TileSet TileSet { get; }
-        
+
         public MapData(IMemoryApi rom, long offset)
         {
             // Utils.Log($"0b{Convert.ToString(Utils.getBits(new byte[] {0b11110000,0b10101010}, 4,8), 2)}");
@@ -25,12 +30,15 @@ namespace PokemonSolver.MapData
             Width = (ushort)Utils.GetIntegerFromByteArray(rom.ReadByteRange(offset + MapDataAddress.Width, MapDataSize.Width, MemoryDomain.ROM));
             Height = (ushort)Utils.GetIntegerFromByteArray(
                 rom.ReadByteRange(offset + MapDataAddress.Height, MapDataSize.Height, MemoryDomain.ROM));
-            
-            Utils.Log($" Width : {Width}");
-            Utils.Log($" Height : {Height}");
+
+            Utils.Log($" Width : {Width}", true);
+            Utils.Log($" Height : {Height}", true);
+
+            GlobalTileset = new Tileset(rom.ReadByteRange(offset + MapDataAddress.GlobalTileset, MapDataSize.GlobalTileset, MemoryDomain.ROM));
+            LocalTileset = new Tileset(rom.ReadByteRange(offset + MapDataAddress.LocalTileset, MapDataSize.LocalTileset, MemoryDomain.ROM));
 
             var tileStructureOffset = rom.ReadU24(offset + MapDataAddress.TileStructure, MemoryDomain.ROM);
-            Utils.Log($" Tile structure : 0x{tileStructureOffset:X}");
+            Utils.Log($" Tile structure : 0x{tileStructureOffset:X}", true);
 
             var tilesData = rom.ReadByteRange(tileStructureOffset, (int)(Width * Height * MapDataSize.Tile), MemoryDomain.ROM);
             Tiles = new Tile[Width * Height];
@@ -47,7 +55,7 @@ namespace PokemonSolver.MapData
                         Utils.Log($"============WTF, index = {tileOffset}===================");
                     }
 
-                    var tile = new Tile(rom.ReadByteRange(tileOffset, MapDataSize.Tile, MemoryDomain.ROM), i,j);
+                    var tile = new Tile(rom.ReadByteRange(tileOffset, MapDataSize.Tile, MemoryDomain.ROM), i, j);
                     // Utils.Log($"  ({i},{j} : {index} -> 0x{tileOffset:X}) -> 0x{rom.ReadU16(tileOffset):x4} -> {tile}", true);
                     Tiles[index] = tile;
                     // Utils.Log(Tiles[index].ToString(), true);

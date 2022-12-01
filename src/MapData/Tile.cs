@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using PokemonSolver.Algoritm;
 using PokemonSolver.Debug;
 using PokemonSolver.Memory;
 using Type = PokemonSolver.Memory.Type;
@@ -8,6 +9,7 @@ namespace PokemonSolver.MapData
 {
     public class Tile : IShortStringable
     {
+        
         public int X { get; }
 
         public int Y { get; }
@@ -15,8 +17,11 @@ namespace PokemonSolver.MapData
         // public byte Attribute { get; }
         // public ushort TileNumber { get; }
         public byte MovementPermission { get; }
+        public uint Block { get; }
 
-        public Tile(List<byte> bytes, int x, int y)
+        public bool Walkable => MovementPermission % 4 != 1; //1, 5, D...   
+
+        public Tile(IList<byte> bytes, int x, int y)
         {
             X = x;
             Y = y;
@@ -32,11 +37,8 @@ namespace PokemonSolver.MapData
             // Utils.Log($"  block data ({Utils.ToBinary(bytes)}): {Utils.ToBinary(blockNrTeil2,8)}, {Utils.ToBinary(pallet,4)}, {Utils.ToBinary(blockNrTeil2PlusFlip,4)}");
 
             MovementPermission = (byte)Utils.getBits(bytes, 8, 6);
-        }
-
-        public bool canWalk()
-        {
-            return Array.Exists(new byte[] { 0, 0xC }, perm => perm == MovementPermission);
+            Block = Utils.GetIntegerFromByteArray(bytes, 0, 2) % (1 << 10);
+            // Utils.Log($"({x},{y}) : {Block:X}:{MovementPermission:X}");
         }
 
         public override string ToString()

@@ -245,6 +245,25 @@ namespace PokemonSolver.Memory
             public const ushort BattleFieldModelId = 1;
         }
 
+        public abstract class MapConnectionAddress
+        {
+            public const ushort Direction = 0;
+            public const ushort Offset = 4;
+            public const ushort MapBank = 8;
+            public const ushort MapIndex = 9;
+            public const ushort Filler = 10;
+        }
+        
+        public abstract class MapConnectionSize
+        {
+            public const ushort Direction = 4;
+            public const ushort Offset = 4;
+            public const ushort MapBank = 1;
+            public const ushort MapIndex = 1;
+            public const ushort Filler = 2;
+            public const ushort TotalSize = Direction + Offset + MapBank + MapIndex + Filler;
+        }
+
         public abstract class MapDataAddress
         {
             public const ushort Width = 0;
