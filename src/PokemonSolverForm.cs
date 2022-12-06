@@ -5,20 +5,17 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 using System.Windows.Forms;
+using BenchmarkDotNet.Running;
 using BizHawk.Client.Common;
 using BizHawk.Client.EmuHawk;
 using BizHawk.Common;
-using PokemonSolver;
 using PokemonSolver.Algoritm;
 using PokemonSolver.Image;
 using PokemonSolver.Image.Colors;
 using PokemonSolver.Interaction;
 using PokemonSolver.MapData;
 using PokemonSolver.Memory;
-using PokemonSolver.Memory.Global;
-using PokemonSolver.PokemonData;
 
 namespace PokemonSolver
 {
@@ -56,7 +53,7 @@ namespace PokemonSolver
             startDirection.SelectedIndex = (int)Direction.Down;
             endDirection.SelectedIndex = (int)Direction.Down;
             SuspendLayout();
-            Controls.Add(labelInfo = new Label { AutoSize = true, MaximumSize = new Size(480, 0) });
+            // Controls.Add(labelInfo = new Label { AutoSize = true, MaximumSize = new Size(480, 0) });
             Controls.Add(MapView = new PictureBox());
             // Controls.Add(MapView = new DataGridView());
             // Controls.Add(_dateTimePicker = new DateTimePicker());
@@ -77,14 +74,14 @@ namespace PokemonSolver
             Engine = new Engine(APIs.Memory, APIs.Joypad);
             // CombatEngine = new CombatEngine(APIs.Memory);
             OverworldEngine = new OverworldEngine(APIs.Memory);
+            Position.SetOverworldEngine(OverworldEngine);
+            
             APIs.Gui.WithSurface(DisplaySurfaceID.EmuCore, delegate { Utils.Log("Euuh bonjour"); });
             APIs.Gui.SetDefaultForegroundColor(Color.Coral);
             APIs.Gui.SetDefaultBackgroundColor(Color.Black);
             OverworldEngine.ComputeMaps();
             InitFields();
             CurrentMap = null;
-            // labelInfo.Text = "C'ay la mayrde";
-            // APIs.Gui.ClearGraphics(DisplaySurfaceID.EmuCore);
         }
 
         private void InitFields()
@@ -97,10 +94,12 @@ namespace PokemonSolver
             var mapBanks = OverworldEngine.Banks.Select((_, index) => index.ToString()).ToArray();
             startMapBank.Items.AddRange(mapBanks);
             endMapBank.Items.AddRange(mapBanks);
-            
+
             InitMapIndexField(startMapBank, startMapIndex);
             InitMapIndexField(endMapBank, endMapIndex);
+            UpdateFieldsFromCharPosition();
         }
+
         private void InitMapIndexField(ComboBox mapBank, ComboBox mapIndex)
         {
             mapIndex.Items.Clear();
@@ -115,7 +114,10 @@ namespace PokemonSolver
             {
                 maps = OverworldEngine.Banks[mapBankIndex];
             }
-            mapIndex.Items.AddRange(maps.Select((map) => map.Name).ToArray());
+
+            mapIndex.Items.AddRange(maps.Select(map => $"{map.Name} ({map.Bank},{map.MapIndex})").ToArray());
+            mapBank.SelectedIndex = 0;
+            mapIndex.SelectedIndex = 0;
         }
 
         protected override void UpdateBefore()
@@ -180,10 +182,15 @@ namespace PokemonSolver
             var characterPosition = OverworldEngine?.GetCurrentPosition();
             // Utils.Log(characterPosition?.ToString());
             if (characterPosition == null) return;
-            
-            startMapBank.SelectedIndex = (int)characterPosition.MapBank;
-            startMapIndex.SelectedIndex = (int)characterPosition.MapIndex;
-            
+
+            startMapBank.SelectedIndex = characterPosition.MapBank;
+            startMapIndex.SelectedIndex = characterPosition.MapIndex;
+
+            if (characterPosition.X < 0 || characterPosition.Y < 0)
+            {
+                Utils.Error($"wtf : charposition = {characterPosition}");
+                return;
+            }
             startX.Value = characterPosition.X;
             startY.Value = characterPosition.Y;
             // Utils.Log($"Direction : {startDirection.SelectedIndex} -> {GetSelectIndexFromDirection(characterPosition.Direction)} ({characterPosition.Direction})");
@@ -201,26 +208,20 @@ namespace PokemonSolver
                 ResetMap();
             }
 
-            DrawMap();
         }
 
         private void ResetMap()
         {
             Utils.Log("Reset Map");
-            customColoredPositions = new List<KeyValuePair<Position, Color>>();
+            // customColoredPositions = new List<KeyValuePair<Position, Color>>();
 
-            DrawMap();
+            MapView.Image = getBitmapFromMap(CurrentMap);
             MapView.SizeMode = PictureBoxSizeMode.Normal;
             MapView.Left = 0;
-            MapView.Top = this.goal.Bottom;
+            MapView.Top = goal.Bottom;
             MapView.Size = MapView.GetPreferredSize(ClientSize);
 
             ClientSize = new Size(ClientSize.Width, MapView.Bottom + 5);
-        }
-
-        private void DrawMap()
-        {
-            MapView.Image = getBitmapFromMap(CurrentMap);
         }
 
         private string ReadData()
@@ -231,20 +232,27 @@ namespace PokemonSolver
         private void ComputeClick()
         {
             SetVerbose(true);
+            // BenchmarkRunner.Run<AStar>();
             Compute();
             SetVerbose(false);
         }
 
-        private void ComputeClick(object sender, EventArgs e)
+        private void DebugClick(object sender, EventArgs e)
         {
-            ComputeClick();
+            Utils.Log("Debugging :");
+            // ComputeClick();
+            var map = OverworldEngine.GetCurrentMap();
+            Utils.Log($"{map.Debug()}");
+            int x = 0, y = -1;
+            for (x = 0; x < map.MapData.Width; x++)
+                Utils.Log($"map in ({x},{y}) : {map.GetNextMap(OverworldEngine, x, y)?.Debug()}");
         }
 
-        private void Compute(bool debug = false)
+        private void Compute()
         {
-            InitFields();
-            return;
-            
+            // InitFields();
+            // return;
+
             if (OverworldEngine == null)
             {
                 Utils.Error("wtf overworldEngine is null");
@@ -263,27 +271,28 @@ namespace PokemonSolver
             var startPosition = GetStartPosition();
             var endPosition = GetEndPosition();
 
-            Utils.Log($"Going from ({startPosition}) to ({endPosition})");
+            Utils.Log($"Going from ({startPosition}) to ({endPosition})",true);
 
 
-            var astar = new AStar(map.MapData);
+            var astar = new AStar(OverworldEngine);
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            var result = debug ? astar.ResolveBenchmark(startPosition, endPosition) : astar.Resolve(startPosition, endPosition);
+            var result = astar.Resolve(startPosition, endPosition);
             stopwatch.Stop();
             Utils.Log($"({stopwatch.ElapsedMilliseconds} ms) Result (length {result?.Depth()}):\n {result?.Debug()}", true);
             customColoredPositions = new List<KeyValuePair<Position, Color>>();
             result?.Ancestors(true).ForEach(node => { customColoredPositions.Add(new KeyValuePair<Position, Color>(node.State, CustomColors.Path)); });
+            ResetMap();
         }
 
         private Position GetStartPosition()
         {
             return new Position(
-                (uint)startMapBank.SelectedIndex,
-                (uint)startMapIndex.SelectedIndex,
-                (uint)startX.Value,
-                (uint)startY.Value,
+                startMapBank.SelectedIndex,
+                startMapIndex.SelectedIndex,
+                (int)startX.Value,
+                (int)startY.Value,
                 GetDirectionFromSelectIndex(startDirection.SelectedIndex),
                 Altitude.Any
             ); //TODO set altitude
@@ -292,10 +301,10 @@ namespace PokemonSolver
         private Position GetEndPosition()
         {
             return new Position(
-                (uint)endMapBank.SelectedIndex,
-                (uint)endMapIndex.SelectedIndex,
-                (uint)endX.Value,
-                (uint)endY.Value,
+                endMapBank.SelectedIndex,
+                endMapIndex.SelectedIndex,
+                (int)endX.Value,
+                (int)endY.Value,
                 GetDirectionFromSelectIndex(endDirection.SelectedIndex),
                 Altitude.Any
             ); //TODO set altitude
@@ -319,296 +328,348 @@ namespace PokemonSolver
         /// </summary>
         private void InitializeComponent()
         {
-            System.Windows.Forms.Label startXLabel;
-            System.Windows.Forms.Label startYLabel;
-            System.Windows.Forms.Label endYLabel;
-            System.Windows.Forms.Label endXLabel;
-            System.Windows.Forms.Label endMapBankLabel;
-            System.Windows.Forms.Label endMapIndexLabel;
-            System.Windows.Forms.Label startMapIndexLabel;
-            System.Windows.Forms.Label startMapBankLabel;
-            this.start = new System.Windows.Forms.GroupBox();
-            this.useCharacterAsStartPosition = new System.Windows.Forms.CheckBox();
-            this.startMapIndex = new System.Windows.Forms.ComboBox();
-            this.startDirection = new System.Windows.Forms.ListBox();
-            this.startMapBank = new System.Windows.Forms.ComboBox();
-            this.startY = new System.Windows.Forms.NumericUpDown();
-            this.startX = new System.Windows.Forms.NumericUpDown();
-            this.endMapBank = new System.Windows.Forms.ComboBox();
-            this.goal = new System.Windows.Forms.GroupBox();
-            this.endMapIndex = new System.Windows.Forms.ComboBox();
-            this.endDirection = new System.Windows.Forms.ListBox();
-            this.endY = new System.Windows.Forms.NumericUpDown();
-            this.endX = new System.Windows.Forms.NumericUpDown();
-            this.travel = new System.Windows.Forms.Button();
-            this.computeMap = new System.Windows.Forms.Button();
-            startXLabel = new System.Windows.Forms.Label();
-            startYLabel = new System.Windows.Forms.Label();
-            endYLabel = new System.Windows.Forms.Label();
-            endXLabel = new System.Windows.Forms.Label();
-            endMapBankLabel = new System.Windows.Forms.Label();
-            endMapIndexLabel = new System.Windows.Forms.Label();
-            startMapIndexLabel = new System.Windows.Forms.Label();
-            startMapBankLabel = new System.Windows.Forms.Label();
-            this.start.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.startY)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.startX)).BeginInit();
-            this.goal.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.endY)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.endX)).BeginInit();
-            this.SuspendLayout();
-            // 
-            // startXLabel
-            // 
-            startXLabel.Location = new System.Drawing.Point(161, 31);
-            startXLabel.Name = "startXLabel";
-            startXLabel.Size = new System.Drawing.Size(15, 16);
-            startXLabel.TabIndex = 1;
-            startXLabel.Text = "x:";
-            // 
-            // startYLabel
-            // 
-            startYLabel.Location = new System.Drawing.Point(161, 53);
-            startYLabel.Name = "startYLabel";
-            startYLabel.Size = new System.Drawing.Size(15, 16);
-            startYLabel.TabIndex = 3;
-            startYLabel.Text = "y:";
-            // 
-            // endYLabel
-            // 
-            endYLabel.Location = new System.Drawing.Point(161, 55);
-            endYLabel.Name = "endYLabel";
-            endYLabel.Size = new System.Drawing.Size(15, 16);
-            endYLabel.TabIndex = 3;
-            endYLabel.Text = "y:";
-            // 
-            // endXLabel
-            // 
-            endXLabel.Location = new System.Drawing.Point(161, 31);
-            endXLabel.Name = "endXLabel";
-            endXLabel.Size = new System.Drawing.Size(15, 16);
-            endXLabel.TabIndex = 1;
-            endXLabel.Text = "x:";
-            // 
-            // endMapBankLabel
-            // 
-            endMapBankLabel.Location = new System.Drawing.Point(6, 33);
-            endMapBankLabel.Name = "endMapBankLabel";
-            endMapBankLabel.Size = new System.Drawing.Size(37, 16);
-            endMapBankLabel.TabIndex = 7;
-            endMapBankLabel.Text = "bank :";
-            endMapBankLabel.TextAlign = System.Drawing.ContentAlignment.TopRight;
-            // 
-            // endMapIndexLabel
-            // 
-            endMapIndexLabel.Location = new System.Drawing.Point(6, 55);
-            endMapIndexLabel.Name = "endMapIndexLabel";
-            endMapIndexLabel.Size = new System.Drawing.Size(37, 16);
-            endMapIndexLabel.TabIndex = 9;
-            endMapIndexLabel.Text = "n° :";
-            endMapIndexLabel.TextAlign = System.Drawing.ContentAlignment.TopRight;
-            // 
-            // startMapIndexLabel
-            // 
-            startMapIndexLabel.Location = new System.Drawing.Point(6, 44);
-            startMapIndexLabel.Name = "startMapIndexLabel";
-            startMapIndexLabel.Size = new System.Drawing.Size(37, 16);
-            startMapIndexLabel.TabIndex = 13;
-            startMapIndexLabel.Text = "n° :";
-            startMapIndexLabel.TextAlign = System.Drawing.ContentAlignment.TopRight;
-            // 
-            // startMapBankLabel
-            // 
-            startMapBankLabel.Location = new System.Drawing.Point(6, 22);
-            startMapBankLabel.Name = "startMapBankLabel";
-            startMapBankLabel.Size = new System.Drawing.Size(37, 16);
-            startMapBankLabel.TabIndex = 11;
-            startMapBankLabel.Text = "bank :";
-            startMapBankLabel.TextAlign = System.Drawing.ContentAlignment.TopRight;
+            const int margin = 5;
+            Label startXLabel;
+            Label startYLabel;
+            Label endYLabel;
+            Label endXLabel;
+            Label endMapBankLabel;
+            Label endMapIndexLabel;
+            Label startMapIndexLabel;
+            Label startMapBankLabel;
+            var miscButtons = new GroupBox();
+            start = new GroupBox();
+            goal = new GroupBox();
+            useCharacterAsStartPosition = new CheckBox();
+            startMapIndex = new ComboBox();
+            startDirection = new ListBox();
+            startMapBank = new ComboBox();
+            startY = new NumericUpDown();
+            startX = new NumericUpDown();
+            endMapBank = new ComboBox();
+            endMapIndex = new ComboBox();
+            endDirection = new ListBox();
+            endY = new NumericUpDown();
+            endX = new NumericUpDown();
+            debugButton = new Button();
+            computeMap = new Button();
+            startXLabel = new Label();
+            startYLabel = new Label();
+            endYLabel = new Label();
+            endXLabel = new Label();
+            endMapBankLabel = new Label();
+            endMapIndexLabel = new Label();
+            startMapIndexLabel = new Label();
+            startMapBankLabel = new Label();
+            start.SuspendLayout();
+            ((ISupportInitialize)(startY)).BeginInit();
+            ((ISupportInitialize)(startX)).BeginInit();
+            goal.SuspendLayout();
+            ((ISupportInitialize)(endY)).BeginInit();
+            ((ISupportInitialize)(endX)).BeginInit();
+            SuspendLayout();
+
+            //
+            // miscButtons
+            //
+            miscButtons.Controls.Add(debugButton);
+            miscButtons.Controls.Add(computeMap);
+            miscButtons.Name = "miscButtons";
+            miscButtons.Size = new Size(500, 50);
+            miscButtons.TabIndex = 1;
+            miscButtons.TabStop = false;
+            miscButtons.Text = "misc";
+            miscButtons.Dock = DockStyle.Top;
+            miscButtons.Anchor = (AnchorStyles.Top | AnchorStyles.Left);
+
+
             // 
             // start
             // 
-            this.start.Controls.Add(startMapIndexLabel);
-            this.start.Controls.Add(this.useCharacterAsStartPosition);
-            this.start.Controls.Add(this.startMapIndex);
-            this.start.Controls.Add(this.startDirection);
-            this.start.Controls.Add(startMapBankLabel);
-            this.start.Controls.Add(startYLabel);
-            this.start.Controls.Add(this.startMapBank);
-            this.start.Controls.Add(this.startY);
-            this.start.Controls.Add(startXLabel);
-            this.start.Controls.Add(this.startX);
-            this.start.Location = new System.Drawing.Point(93, 12);
-            this.start.Name = "start";
-            this.start.Size = new System.Drawing.Size(363, 81);
-            this.start.TabIndex = 1;
-            this.start.TabStop = false;
-            this.start.Text = "start";
-            // 
-            // useCharacterAsStartPosition
-            // 
-            this.useCharacterAsStartPosition.Checked = true;
-            this.useCharacterAsStartPosition.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.useCharacterAsStartPosition.Location = new System.Drawing.Point(6, 61);
-            this.useCharacterAsStartPosition.Name = "useCharacterAsStartPosition";
-            this.useCharacterAsStartPosition.Size = new System.Drawing.Size(149, 18);
-            this.useCharacterAsStartPosition.TabIndex = 5;
-            this.useCharacterAsStartPosition.Text = "use character position";
-            this.useCharacterAsStartPosition.UseVisualStyleBackColor = true;
-            this.useCharacterAsStartPosition.CheckedChanged += new System.EventHandler(this.useCharacterAsStartPosition_CheckedChanged);
-            // 
-            // startMapIndex
-            // 
-            this.startMapIndex.Enabled = false;
-            this.startMapIndex.FormattingEnabled = true;
-            this.startMapIndex.Location = new System.Drawing.Point(43, 39);
-            this.startMapIndex.Name = "startMapIndex";
-            this.startMapIndex.Size = new System.Drawing.Size(112, 21);
-            this.startMapIndex.TabIndex = 12;
-            // 
-            // startDirection
-            // 
-            this.startDirection.Enabled = false;
-            this.startDirection.FormattingEnabled = true;
-            this.startDirection.Items.AddRange(new object[] { "Down", "Up", "Left", "Right" });
-            this.startDirection.Location = new System.Drawing.Point(237, 17);
-            this.startDirection.Name = "startDirection";
-            this.startDirection.Size = new System.Drawing.Size(120, 56);
-            this.startDirection.TabIndex = 5;
-            // 
-            // startMapBank
-            // 
-            this.startMapBank.Enabled = false;
-            this.startMapBank.FormattingEnabled = true;
-            this.startMapBank.Location = new System.Drawing.Point(43, 17);
-            this.startMapBank.MaxDropDownItems = 30;
-            this.startMapBank.Name = "startMapBank";
-            this.startMapBank.Size = new System.Drawing.Size(112, 21);
-            this.startMapBank.TabIndex = 10;
-            this.startMapBank.SelectedIndexChanged += new System.EventHandler((sender, args) => InitMapIndexField(startMapBank, startMapIndex));
-            // 
-            // startY
-            // 
-            this.startY.Enabled = false;
-            this.startY.Location = new System.Drawing.Point(182, 53);
-            this.startY.Name = "startY";
-            this.startY.Size = new System.Drawing.Size(39, 20);
-            this.startY.TabIndex = 2;
-            this.startY.Value = new decimal(new int[] { 5, 0, 0, 0 });
-            // 
-            // startX
-            // 
-            this.startX.Enabled = false;
-            this.startX.Location = new System.Drawing.Point(182, 27);
-            this.startX.Name = "startX";
-            this.startX.Size = new System.Drawing.Size(39, 20);
-            this.startX.TabIndex = 0;
-            this.startX.Value = new decimal(new int[] { 5, 0, 0, 0 });
-            // 
-            // endMapBank
-            // 
-            this.endMapBank.FormattingEnabled = true;
-            this.endMapBank.Location = new System.Drawing.Point(43, 28);
-            this.endMapBank.MaxDropDownItems = 30;
-            this.endMapBank.Name = "endMapBank";
-            this.endMapBank.Size = new System.Drawing.Size(112, 21);
-            this.endMapBank.TabIndex = 6;
-            this.endMapBank.SelectedIndexChanged += new System.EventHandler((sender, args) => InitMapIndexField(endMapBank, endMapIndex));
+            start.Controls.Add(startMapIndexLabel);
+            start.Controls.Add(useCharacterAsStartPosition);
+            start.Controls.Add(startMapIndex);
+            start.Controls.Add(startDirection);
+            start.Controls.Add(startMapBankLabel);
+            start.Controls.Add(startYLabel);
+            start.Controls.Add(startMapBank);
+            start.Controls.Add(startY);
+            start.Controls.Add(startXLabel);
+            start.Controls.Add(startX);
+            start.Name = "start";
+            start.Size = new Size(500, 100);
+            start.TabIndex = miscButtons.TabIndex + 1;
+            start.TabStop = false;
+            start.Text = "start";
+            start.Dock = miscButtons.Dock;
+            start.Anchor = miscButtons.Anchor;
 
             // 
             // goal
             // 
-            this.goal.Controls.Add(endMapIndexLabel);
-            this.goal.Controls.Add(this.endMapIndex);
-            this.goal.Controls.Add(endMapBankLabel);
-            this.goal.Controls.Add(this.endMapBank);
-            this.goal.Controls.Add(this.endDirection);
-            this.goal.Controls.Add(endYLabel);
-            this.goal.Controls.Add(this.endY);
-            this.goal.Controls.Add(endXLabel);
-            this.goal.Controls.Add(this.endX);
-            this.goal.Location = new System.Drawing.Point(93, 99);
-            this.goal.Name = "goal";
-            this.goal.Size = new System.Drawing.Size(363, 80);
-            this.goal.TabIndex = 4;
-            this.goal.TabStop = false;
-            this.goal.Text = "goal";
+            goal.Controls.Add(endMapIndexLabel);
+            goal.Controls.Add(endMapIndex);
+            goal.Controls.Add(endMapBankLabel);
+            goal.Controls.Add(endMapBank);
+            goal.Controls.Add(endDirection);
+            goal.Controls.Add(endYLabel);
+            goal.Controls.Add(endY);
+            goal.Controls.Add(endXLabel);
+            goal.Controls.Add(endX);
+            goal.Name = "goal";
+            goal.Size = start.Size;
+            goal.TabIndex = start.TabIndex + 1;
+            goal.TabStop = false;
+            goal.Text = "goal";
+            goal.Dock = miscButtons.Dock;
+            goal.Anchor = miscButtons.Anchor;
+
             // 
-            // endMapIndex
+            // debugButton
             // 
-            this.endMapIndex.FormattingEnabled = true;
-            this.endMapIndex.Location = new System.Drawing.Point(43, 50);
-            this.endMapIndex.Name = "endMapIndex";
-            this.endMapIndex.Size = new System.Drawing.Size(112, 21);
-            this.endMapIndex.TabIndex = 8;
-            // 
-            // endDirection
-            // 
-            this.endDirection.FormattingEnabled = true;
-            this.endDirection.Items.AddRange(new object[] { "Down", "Up", "Left", "Right" });
-            this.endDirection.Location = new System.Drawing.Point(237, 17);
-            this.endDirection.Name = "endDirection";
-            this.endDirection.Size = new System.Drawing.Size(120, 56);
-            this.endDirection.TabIndex = 6;
-            // 
-            // endY
-            // 
-            this.endY.Location = new System.Drawing.Point(182, 53);
-            this.endY.Name = "endY";
-            this.endY.Size = new System.Drawing.Size(39, 20);
-            this.endY.TabIndex = 2;
-            this.endY.Value = new decimal(new int[] { 9, 0, 0, 0 });
-            // 
-            // endX
-            // 
-            this.endX.Location = new System.Drawing.Point(182, 27);
-            this.endX.Name = "endX";
-            this.endX.Size = new System.Drawing.Size(39, 20);
-            this.endX.TabIndex = 0;
-            this.endX.Value = new decimal(new int[] { 6, 0, 0, 0 });
-            // 
-            // travel
-            // 
-            this.travel.Location = new System.Drawing.Point(12, 53);
-            this.travel.Name = "travel";
-            this.travel.Size = new System.Drawing.Size(75, 38);
-            this.travel.TabIndex = 0;
-            this.travel.Text = "Travel (Debug)";
-            this.travel.UseVisualStyleBackColor = true;
-            this.travel.Click += new System.EventHandler(this.ComputeClick);
+            debugButton.Location = new Point(12, 15);
+            debugButton.Name = "debugButton";
+            // debugButton.Size = new Size(75, 38);
+            debugButton.TabIndex = 0;
+            debugButton.Text = "Debug";
+            debugButton.UseVisualStyleBackColor = true;
+            debugButton.Click += DebugClick;
             // 
             // computeMap
             // 
-            this.computeMap.Location = new System.Drawing.Point(12, 12);
-            this.computeMap.Name = "computeMap";
-            this.computeMap.Size = new System.Drawing.Size(75, 35);
-            this.computeMap.TabIndex = 5;
-            this.computeMap.Text = "Compute Maps";
-            this.computeMap.UseVisualStyleBackColor = true;
-            this.computeMap.Click += new System.EventHandler(this.ForceComputeMaps);
+            computeMap.Location = new Point(12 + debugButton.Bounds.Right, 15);
+            computeMap.Name = "computeMap";
+            // computeMap.Size = new Size(75, 35);
+            computeMap.TabIndex = 1;
+            computeMap.Text = "Compute Maps";
+            computeMap.UseVisualStyleBackColor = true;
+            computeMap.Click += (_, _) => ComputeClick();
+
+            // 
+            // startMapBankLabel
+            // 
+            startMapBankLabel.Location = new Point(6, 22);
+            startMapBankLabel.Name = "startMapBankLabel";
+            startMapBankLabel.Size = new Size(37, 16);
+            startMapBankLabel.TabIndex = 11;
+            startMapBankLabel.Text = "bank :";
+            startMapBankLabel.TextAlign = ContentAlignment.MiddleRight;
+
+            // 
+            // startMapBank
+            // 
+            startMapBank.Enabled = false;
+            startMapBank.FormattingEnabled = true;
+            startMapBank.Location = new Point(startMapBankLabel.Bounds.Right + margin, startMapBankLabel.Location.Y);
+            startMapBank.MaxDropDownItems = 30;
+            startMapBank.Name = "startMapBank";
+            startMapBank.Size = new Size(180, 21);
+            startMapBank.TabIndex = 10;
+            startMapBank.SelectedIndexChanged += (sender, args) => InitMapIndexField(startMapBank, startMapIndex);
+
+            // 
+            // startMapIndexLabel
+            // 
+            startMapIndexLabel.Location = new Point(6, 44);
+            startMapIndexLabel.Name = "startMapIndexLabel";
+            startMapIndexLabel.Size = new Size(37, 16);
+            startMapIndexLabel.TabIndex = 13;
+            startMapIndexLabel.Text = "n° :";
+            startMapIndexLabel.TextAlign = startMapBankLabel.TextAlign;
+
+            // 
+            // startMapIndex
+            // 
+            startMapIndex.Enabled = false;
+            startMapIndex.FormattingEnabled = true;
+            startMapIndex.Location = new Point(startMapIndexLabel.Bounds.Right + margin, startMapIndexLabel.Location.Y);
+            startMapIndex.Name = "startMapIndex";
+            startMapIndex.Size = new Size(180, 21);
+            startMapIndex.TabIndex = 12;
+
+            // 
+            // startXLabel
+            // 
+            startXLabel.Location = new Point(startMapBank.Bounds.Right + margin, startMapBankLabel.Location.Y);
+            // startXLabel.Location = new Point(0,0);
+            startXLabel.Name = "startXLabel";
+            startXLabel.Size = new Size(15, 16);
+            startXLabel.TabIndex = 1;
+            startXLabel.Text = "x:";
+            startXLabel.TextAlign = ContentAlignment.MiddleRight;
+            
+            // 
+            // startX
+            // 
+            startX.Enabled = false;
+            startX.Location = new Point(startXLabel.Bounds.Right + margin, startXLabel.Location.Y);
+            startX.Name = "startX";
+            startX.Size = new Size(39, 20);
+            startX.TabIndex = 0;
+            startX.Value = 5;
+            startX.Minimum = 0;
+            startX.Maximum = 1000;
+            
+            // 
+            // startYLabel
+            // 
+            startYLabel.Location = new Point(startXLabel.Location.X, startXLabel.Bounds.Bottom + margin);
+            startYLabel.Name = "startYLabel";
+            startYLabel.Size = new Size(15, 16);
+            startYLabel.TabIndex = 3;
+            startYLabel.Text = "y:";
+            startYLabel.TextAlign = startXLabel.TextAlign;
+            
+            // 
+            // startY
+            // 
+            startY.Enabled = false;
+            startY.Location = new Point(startYLabel.Bounds.Right + margin, startYLabel.Location.Y);
+            startY.Name = "startY";
+            startY.Size = new Size(39, 20);
+            startY.TabIndex = 2;
+            startY.Value = 5;
+            startY.Minimum = 0;
+            startY.Maximum = 1000;
+            
+            // 
+            // startDirection
+            // 
+            startDirection.Enabled = false;
+            startDirection.FormattingEnabled = true;
+            startDirection.Items.AddRange(new object[] { "Down", "Up", "Left", "Right" });
+            startDirection.Location = new Point(startX.Bounds.Right + margin, 17);
+            startDirection.Name = "startDirection";
+            startDirection.Size = new Size(120, 56);
+            startDirection.TabIndex = 5;
+            
+            // 
+            // useCharacterAsStartPosition
+            // 
+            useCharacterAsStartPosition.Checked = true;
+            useCharacterAsStartPosition.CheckState = CheckState.Checked;
+            useCharacterAsStartPosition.Location = new Point(6, start.Size.Height - 20);
+            useCharacterAsStartPosition.Name = "useCharacterAsStartPosition";
+            useCharacterAsStartPosition.Size = new Size(149, 18);
+            useCharacterAsStartPosition.TabIndex = 5;
+            useCharacterAsStartPosition.Text = "use character position";
+            useCharacterAsStartPosition.UseVisualStyleBackColor = true;
+            useCharacterAsStartPosition.CheckedChanged += useCharacterAsStartPosition_CheckedChanged;
+            
+            // 
+            // endMapBankLabel
+            // 
+            endMapBankLabel.Location = startMapBankLabel.Location;
+            endMapBankLabel.Name = "endMapBankLabel";
+            endMapBankLabel.Size = startMapBankLabel.Size;
+            endMapBankLabel.TabIndex = 7;
+            endMapBankLabel.Text = "bank :";
+            endMapBankLabel.TextAlign = startMapBankLabel.TextAlign;
+
+            // 
+            // endMapBank
+            // 
+            endMapBank.FormattingEnabled = true;
+            endMapBank.Location = startMapBank.Location;
+            endMapBank.MaxDropDownItems = 30;
+            endMapBank.Name = "endMapBank";
+            endMapBank.Size = startMapBank.Size;
+            endMapBank.TabIndex = 6;
+            endMapBank.SelectedIndexChanged += (sender, args) => InitMapIndexField(endMapBank, endMapIndex);
+
+            // 
+            // endMapIndexLabel
+            // 
+            endMapIndexLabel.Location = startMapIndexLabel.Location;
+            endMapIndexLabel.Name = "endMapIndexLabel";
+            endMapIndexLabel.Size = startMapIndexLabel.Size;
+            endMapIndexLabel.TabIndex = 9;
+            endMapIndexLabel.Text = "n° :";
+            endMapIndexLabel.TextAlign = startMapBankLabel.TextAlign;
+
+
+            // 
+            // endMapIndex
+            // 
+            endMapIndex.FormattingEnabled = true;
+            endMapIndex.Location = startMapIndex.Location;
+            endMapIndex.Name = "endMapIndex";
+            endMapIndex.Size = startMapIndex.Size;
+            endMapIndex.TabIndex = 8;
+
+            // 
+            // endXLabel
+            // 
+            endXLabel.Location = startXLabel.Location;
+            endXLabel.Name = "endXLabel";
+            endXLabel.Size = startXLabel.Size;
+            endXLabel.TabIndex = 1;
+            endXLabel.Text = "x:";
+            
+            // 
+            // endX
+            // 
+            endX.Location = startX.Location;
+            endX.Name = "endX";
+            endX.Size = startX.Size;
+            endX.TabIndex = 0;
+            endX.Value = 6;
+            endX.Minimum = 0;
+            endX.Maximum = 1000;
+            
+            // 
+            // endYLabel
+            // 
+            endYLabel.Location = startYLabel.Location;
+            endYLabel.Name = "endYLabel";
+            endYLabel.Size = startYLabel.Size;
+            endYLabel.TabIndex = 3;
+            endYLabel.Text = "y:";
+            
+            // 
+            // endY
+            // 
+            endY.Location = startY.Location;
+            endY.Name = "endY";
+            endY.Size = startY.Size;
+            endY.TabIndex = 2;
+            endY.Value = 9;
+            endY.Minimum = 0;
+            endY.Maximum = 1000;
+            
+            
+            // 
+            // endDirection
+            // 
+            endDirection.FormattingEnabled = true;
+            endDirection.Items.AddRange(new object[] { "Down", "Up", "Left", "Right" });
+            endDirection.Location = startDirection.Location;
+            endDirection.Name = "endDirection";
+            endDirection.Size = startDirection.Size;
+            endDirection.TabIndex = 6;
+
             // 
             // PokemonSolverForm
             // 
-            this.ClientSize = new System.Drawing.Size(565, 346);
-            this.Controls.Add(this.computeMap);
-            this.Controls.Add(this.goal);
-            this.Controls.Add(this.start);
-            this.Controls.Add(this.travel);
-            this.Name = "PokemonSolverForm";
-            this.start.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.startY)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.startX)).EndInit();
-            this.goal.ResumeLayout(false);
-            ((System.ComponentModel.ISupportInitialize)(this.endY)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.endX)).EndInit();
-            this.ResumeLayout(false);
+            ClientSize = new Size(600, 480);
+            Controls.Add(goal);
+            Controls.Add(start);
+            Controls.Add(miscButtons);
+            Name = "PokemonSolverForm";
+            start.ResumeLayout(false);
+            ((ISupportInitialize)(startY)).EndInit();
+            ((ISupportInitialize)(startX)).EndInit();
+            goal.ResumeLayout(false);
+            ((ISupportInitialize)(endY)).EndInit();
+            ((ISupportInitialize)(endX)).EndInit();
+            ResumeLayout(false);
         }
 
-        private System.Windows.Forms.ComboBox startMapIndex;
-        private System.Windows.Forms.ComboBox startMapBank;
-        private System.Windows.Forms.ComboBox endMapBank;
+        private ComboBox startMapIndex;
+        private ComboBox startMapBank;
+        private ComboBox endMapBank;
 
-        private System.Windows.Forms.ComboBox endMapIndex;
+        private ComboBox endMapIndex;
 
         private void ForceComputeMaps(object sender, EventArgs e)
         {
@@ -617,24 +678,24 @@ namespace PokemonSolver
             SetVerbose(false);
         }
 
-        private System.Windows.Forms.Button computeMap;
+        private Button computeMap;
 
-        private System.Windows.Forms.GroupBox start;
+        private GroupBox start;
 
-        private System.Windows.Forms.GroupBox goal;
+        private GroupBox goal;
 
-        private System.Windows.Forms.CheckBox useCharacterAsStartPosition;
+        private CheckBox useCharacterAsStartPosition;
 
-        private System.Windows.Forms.ListBox startDirection;
+        private ListBox startDirection;
 
-        private System.Windows.Forms.ListBox endDirection;
+        private ListBox endDirection;
 
-        private System.Windows.Forms.NumericUpDown startX;
-        private System.Windows.Forms.NumericUpDown startY;
-        private System.Windows.Forms.NumericUpDown endY;
-        private System.Windows.Forms.NumericUpDown endX;
+        private NumericUpDown startX;
+        private NumericUpDown startY;
+        private NumericUpDown endY;
+        private NumericUpDown endX;
 
-        private System.Windows.Forms.Button travel;
+        private Button debugButton;
 
         private void useCharacterAsStartPosition_CheckedChanged(object sender, EventArgs e)
         {

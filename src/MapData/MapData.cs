@@ -67,7 +67,7 @@ namespace PokemonSolver.MapData
             // Utils.Log($" width : {rom.ReadS32(offset)} (signed) OR {rom.ReadU32(offset)} (signed)");
         }
 
-        public Tile GetTile(uint x, uint y)
+        public Tile GetTile(int x, int y)
         {
             return Tiles[y * Width + x];
         }

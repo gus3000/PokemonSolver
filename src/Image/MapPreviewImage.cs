@@ -16,13 +16,12 @@ namespace PokemonSolver.Image
             // Utils.Log($"Loading map image with size ({Image.Width},{Image.Height})", true);
 
             Color[][] colors = new Color[Image.Width][];
-            for (uint x = 0; x < Image.Width; x++)
+            for (int x = 0; x < Image.Width; x++)
             {
                 colors[x] = new Color[Image.Height];
 
-                for (uint y = 0; y < Image.Height; y++)
+                for (int y = 0; y < Image.Height; y++)
                 {
-                    // colors[x][y] = Color.FromArgb(255, x * 10 % 256, y * 10 % 256);
                     var tile = map.MapData.GetTile(x, y);
                     colors[x][y] = MovementPermissionColors.getColorFromPermissionByte(tile.MovementPermission);
                     // Utils.Log($"({x},{y}) {tile.MovementPermission}", true);
@@ -34,6 +33,8 @@ namespace PokemonSolver.Image
             {
                 var pos = pair.Key;
                 var col = pair.Value;
+                if (map.Bank != pos.MapBank || map.MapIndex != pos.MapIndex)
+                    continue;
                 colors[pos.X][pos.Y] = col;
             }
 

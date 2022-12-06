@@ -2,22 +2,28 @@
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using PokemonSolver.Debug;
+using PokemonSolver.Interaction;
+using PokemonSolver.MapData;
 using PokemonSolver.Memory;
 
 namespace PokemonSolver.Algoritm
 {
     public class Position : IShortStringable
     {
-        private static MapData.MapData? _mapData = null;
+        private static OverworldEngine _overworldEngine = null;
 
-        public uint MapBank { get; }
-        public uint MapIndex { get; }
-        public uint X { get; }
-        public uint Y { get; }
-        public Direction Direction { get; }
-        public Altitude Altitude { get; }
+        public int MapBank { get; private set; }
+        public int MapIndex { get; private set; }
+        public int X { get; private set; }
+        public int Y { get; private set; }
+        public Direction Direction { get; private set; }
+        public Altitude Altitude { get; private set; }
 
-        public Position(uint bank, uint index, uint x, uint y, Direction direction, Altitude altitude)
+        public bool Valid => X >= 0 && X < MapData.Width && Y >= 0 && Y < MapData.Height;
+        public Map Map => _overworldEngine.GetMap(this);
+        public MapData.MapData MapData => Map.MapData;
+
+        public Position(int bank, int index, int x, int y, Direction direction, Altitude altitude)
         {
             MapBank = bank;
             MapIndex = index;
@@ -27,13 +33,36 @@ namespace PokemonSolver.Algoritm
             Altitude = altitude;
         }
 
-        public float MinimumDistance(Position p)
+        public Position(uint mapBank, uint mapIndex, uint x, uint y, Direction direction, Altitude altitude) :
+            this((int)mapBank, (int)mapIndex, (int)x, (int)y, direction, altitude)
         {
-            if (MapBank != p.MapBank || MapIndex != p.MapIndex)
-                return 10000; //FIXME
-            var distX = X > p.X ? X - p.X : p.X - X;
-            var distY = Y > p.Y ? Y - p.Y : p.Y - Y;
-            var dirPenalty = Direction == p.Direction ? 0 : 1;
+        }
+
+        public float MinimumDistance(Position goal, Map? nextMapInPath)
+        {
+            if (nextMapInPath != null)
+            {
+                var map = _overworldEngine.GetMap(this);
+                // Utils.Log($"Searching for connection to map ({nextMapInPath.Bank},{nextMapInPath.MapIndex}) in map ({map.Bank},{map.MapIndex})");
+                // foreach (var c in map.Connections)
+                // {
+                    // Utils.Log($" -> connection : ({c.MapBank},{c.MapIndex},{c.Direction})");
+                // }
+                var connectionToNextMap = map.Connections.Find(c => c.MapBank == nextMapInPath.Bank && c.MapIndex == nextMapInPath.MapIndex);
+                if (connectionToNextMap == null)
+                    return float.PositiveInfinity;
+                return connectionToNextMap.Direction switch
+                {
+                    Direction.Down => map.MapData.Height - Y,
+                    Direction.Up => Y,
+                    Direction.Left => X,
+                    Direction.Right => map.MapData.Width - X,
+                    _ => throw new ArgumentOutOfRangeException()
+                };
+            }
+            var distX = X > goal.X ? X - goal.X : goal.X - X;
+            var distY = Y > goal.Y ? Y - goal.Y : goal.Y - Y;
+            var dirPenalty = Direction == goal.Direction ? 0 : 1;
 
             return distX + distY + dirPenalty;
         }
@@ -41,7 +70,6 @@ namespace PokemonSolver.Algoritm
         public List<Position> Neighbours()
         {
             var neighbours = new List<Position>(4);
-            // var currentTile = _mapData.GetTile(X,Y);
             foreach (var d in (Direction[])Enum.GetValues(typeof(Direction)))
             {
                 if (Direction != d)
@@ -65,9 +93,9 @@ namespace PokemonSolver.Algoritm
         /// <returns></returns>
         public Position? Forward()
         {
-            if (_mapData == null)
+            if (_overworldEngine == null)
                 throw new Exception("Attempting to compute Forward Position without having called SetMapData in Position.cs");
-            uint x = X, y = Y;
+            int x = X, y = Y;
             switch (Direction)
             {
                 case Direction.Left:
@@ -86,23 +114,28 @@ namespace PokemonSolver.Algoritm
                     throw new ArgumentOutOfRangeException();
             }
 
-            if (x >= _mapData.Width || y >= _mapData.Height) // this actually handles -1 as well as it's an uint and underflows back to uint.maxvalue
+            var p = new Position(MapBank, MapIndex, x, y, Direction, Altitude);
+            if (!p.Valid)
+                p.FixMap();
+            if (!p.Valid)
+            {
+                // Utils.Log($"Position {p} not valid.");
+                return null;
+            }
+
+            if (!CanMoveTo(p))
                 return null;
 
-            if (!CanMoveTo(x, y))
-                return null;
-
-            return new Position(MapBank, MapIndex, x, y, Direction, Altitude); //TODO check altitude change
+            return p; //TODO check altitude change
         }
 
-        public bool CanMoveTo(uint x, uint y)
+        public bool CanMoveTo(Position p)
         {
             //check with Route 110 && route 114
-            if (_mapData == null)
-                throw new Exception("Attempting to compute CanMoveTo without having called SetMapData in Position.cs");
-
-            var from = _mapData.GetTile(X, Y);
-            var to = _mapData.GetTile(x, y);
+            if (_overworldEngine == null)
+                throw new Exception("Attempting to compute Forward Position without having called SetMapData in Position.cs");
+            var from = MapData.GetTile(X, Y);
+            var to = p.MapData.GetTile(p.X, p.Y);
             if (!to.Walkable)
                 return false;
 
@@ -125,13 +158,56 @@ namespace PokemonSolver.Algoritm
             // 10 -> 3C -> 10 if alt high
         }
 
+        private void FixMap()
+        {
+            // var map = _overworldEngine.getMap(MapBank, MapIndex).GetNextMap(_overworldEngine, X, Y);
+            // if (map == null)
+            // return;
+            // MapBank = map.Bank;
+            // MapIndex = map.MapIndex;
+            foreach (var con in _overworldEngine.GetMap(this).Connections)
+            {
+                var map = _overworldEngine.GetMap(con);
+                int baseX, baseY;
+                switch (con.Direction)
+                {
+                    case Direction.Down:
+                        baseX = con.Offset;
+                        baseY = MapData.Height;
+                        break;
+                    case Direction.Up:
+                        baseX = con.Offset;
+                        baseY = -map.MapData.Height;
+                        break;
+                    case Direction.Left:
+                        baseX = -map.MapData.Width;
+                        baseY = con.Offset;
+                        break;
+                    case Direction.Right:
+                        baseX = MapData.Width;
+                        baseY = con.Offset;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException($"Direction {con.Direction} does not exist");
+                }
+
+                if (X < baseX || X >= baseX + map.MapData.Width || Y < baseY || Y >= baseY + map.MapData.Height) continue;
+
+                X -= baseX;
+                Y -= baseY;
+                MapBank = con.MapBank;
+                MapIndex = con.MapIndex;
+                return;
+            }
+        }
+
         public override bool Equals(object obj)
         {
             if (obj.GetType() != typeof(Position))
                 return false;
 
             var p = (Position)obj;
-            return X == p.X && Y == p.Y && Direction == p.Direction;
+            return MapBank == p.MapBank && MapIndex == p.MapIndex && X == p.X && Y == p.Y && Direction == p.Direction;
         }
 
         public string ToShortString()
@@ -141,12 +217,12 @@ namespace PokemonSolver.Algoritm
 
         public override string ToString()
         {
-            return $"Position({X},{Y},{Direction})";
+            return $"Position(({MapBank},{MapIndex}) : {X},{Y},{Direction})";
         }
 
-        public static void SetMapData(MapData.MapData mapData)
+        public static void SetOverworldEngine(OverworldEngine engine)
         {
-            _mapData = mapData;
+            _overworldEngine = engine;
         }
     }
 }

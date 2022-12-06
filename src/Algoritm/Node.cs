@@ -2,10 +2,11 @@
 using System.Collections.Generic;
 using PokemonSolver.Debug;
 using PokemonSolver.MapData;
+using Priority_Queue;
 
 namespace PokemonSolver.Algoritm
 {
-    public class Node<T> where T : IShortStringable
+    public class Node<T> : FastPriorityQueueNode where T : IShortStringable 
     {
         public Node<T>? Parent { get; }
         public List<Node<T>> Children { get; }

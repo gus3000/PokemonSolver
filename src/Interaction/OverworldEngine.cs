@@ -74,7 +74,7 @@ namespace PokemonSolver.Interaction
                     Utils.Log($"  calculation {totalCalculations}", true);
                     Utils.Log($"  map address : 0x{mapHeaderPointer:X}", true);
                     Utils.Log($"  map header address : 0x{mapHeaderOffset:X}", true);
-                    var map = new Map(_memoryApi, mapHeaderOffset);
+                    var map = new Map(_memoryApi, mapHeaderOffset, Banks.Count, bank.Count);
                     Maps.Add(map);
                     bank.Add(map);
                     Utils.Log("________________________________", true);
@@ -89,10 +89,20 @@ namespace PokemonSolver.Interaction
             _memoryApi.UseMemoryDomain(oldDomain);
         }
 
-        public Map getMap(int bank, int number)
+        public Map GetMap(int bank, int number)
         {
-            Utils.Log($"Fetching map[{bank}][{number}]", true);
+            // Utils.Log($"Fetching map[{bank}][{number}]", true);
             return Banks[bank][number];
+        }
+
+        public Map GetMap(Position p)
+        {
+            return GetMap(p.MapBank, p.MapIndex);
+        }
+
+        public Map GetMap(Connection c)
+        {
+            return GetMap(c.MapBank, c.MapIndex);
         }
 
         public Map? GetCurrentMap()
@@ -103,7 +113,7 @@ namespace PokemonSolver.Interaction
                 return null;
             }
 
-            var map = getMap(
+            var map = GetMap(
                 (int)_memoryApi.ReadU8(Memory.Global.Ram.Address.EmeraldCurrentMapBank, MemoryDomain.CombinedWRAM),
                 (int)_memoryApi.ReadU8(Memory.Global.Ram.Address.EmeraldCurrentMapNumber, MemoryDomain.CombinedWRAM)
             );
@@ -132,7 +142,11 @@ namespace PokemonSolver.Interaction
             var x = rawX - Border.Size;
             var y = rawY - Border.Size;
             var dir = (Direction)rawDir;
-            return new Position(mapBank, mapIndex, x, y, dir, Altitude.Any); //TODO find altitude from memory
+
+            var pos = new Position(mapBank, mapIndex, x, y, dir, Altitude.Any);
+            
+            // Utils.Log($"returning position {pos}");
+            return pos; //TODO find altitude from memory
         }
     }
 }
