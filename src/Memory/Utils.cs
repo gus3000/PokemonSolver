@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using BizHawk.Client.Common;
 using BizHawk.Common;
+using Microsoft.Extensions.Primitives;
 using PokemonSolver.Memory.Global;
 using PokemonSolver.Memory.Global.Rom;
 
@@ -12,6 +13,7 @@ namespace PokemonSolver.Memory
 {
     public abstract class Utils
     {
+        public static readonly int MaxLineLength = 120;
         public static readonly string[] CHARSET = new string[]
         {
             " ",
@@ -453,9 +455,20 @@ namespace PokemonSolver.Memory
             return sb.ToString();
         }
 
-        public static void Log(string? msg, bool verbose=false)
+        public static void Log(string? msg, bool verbose = false)
         {
-            BizHawk.Common.Log.Note("Debug" + (verbose ? "-verbose" : ""), msg ?? "null");
+            if (msg == null)
+                return;
+            var sb = new StringBuilder();
+            foreach (var c in msg)
+            {
+                sb.Append(c);
+                if (sb.Length < MaxLineLength)
+                    continue;
+                BizHawk.Common.Log.Note("Debug" + (verbose ? "-verbose" : ""), sb.ToString());
+                sb.Clear();
+            }
+            BizHawk.Common.Log.Note("Debug" + (verbose ? "-verbose" : ""), sb.ToString());
         }
 
         public static void Error(string? msg)

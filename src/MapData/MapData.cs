@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Drawing;
 using BizHawk.Client.Common;
+using PokemonSolver.Image.Tileset;
 using PokemonSolver.Memory;
 using PokemonSolver.Memory.Local;
 
@@ -17,6 +18,8 @@ namespace PokemonSolver.MapData
         // public Border Border { get; }
         public Tileset GlobalTileset { get; }
         public Tileset LocalTileset { get; }
+        // public long GlobalTileset { get; }
+        // public long LocalTileset { get; }
         public Tile[] Tiles { get; }
 
         public Color[] CustomColors { get; }
@@ -34,8 +37,12 @@ namespace PokemonSolver.MapData
             Utils.Log($" Width : {Width}", true);
             Utils.Log($" Height : {Height}", true);
 
-            GlobalTileset = new Tileset(rom.ReadByteRange(offset + MapDataAddress.GlobalTileset, MapDataSize.GlobalTileset, MemoryDomain.ROM));
-            LocalTileset = new Tileset(rom.ReadByteRange(offset + MapDataAddress.LocalTileset, MapDataSize.LocalTileset, MemoryDomain.ROM));
+            var globalTilesetOffset = rom.ReadU24(offset + MapDataAddress.GlobalTileset, MemoryDomain.ROM);
+            var localTilesetOffset = rom.ReadU24(offset + MapDataAddress.LocalTileset, MemoryDomain.ROM);
+            GlobalTileset = Tileset.GetTileset(rom, globalTilesetOffset);
+            LocalTileset = Tileset.GetTileset(rom, localTilesetOffset);
+            // GlobalTileset = offset + MapDataAddress.GlobalTileset;
+            // LocalTileset = offset + MapDataAddress.LocalTileset;
 
             var tileStructureOffset = rom.ReadU24(offset + MapDataAddress.TileStructure, MemoryDomain.ROM);
             Utils.Log($" Tile structure : 0x{tileStructureOffset:X}", true);

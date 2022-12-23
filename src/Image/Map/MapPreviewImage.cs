@@ -1,16 +1,13 @@
 ﻿using System.Collections.Generic;
 using System.Drawing;
-using BizHawk.Common;
 using PokemonSolver.Algoritm;
 using PokemonSolver.Image.Colors;
-using PokemonSolver.MapData;
-using PokemonSolver.Memory;
 
-namespace PokemonSolver.Image
+namespace PokemonSolver.Image.Map
 {
     public class MapPreviewImage : ImageHandler
     {
-        public MapPreviewImage(Map map, List<KeyValuePair<Position, Color>> customColors)
+        public MapPreviewImage(MapData.Map map, List<KeyValuePair<Position, Color>> customColors)
         {
             Image = new Bitmap(map.MapData.Width, map.MapData.Height);
             // Utils.Log($"Loading map image with size ({Image.Width},{Image.Height})", true);
@@ -42,7 +39,7 @@ namespace PokemonSolver.Image
             // for (int x = 0; x < Image.Width; x++)
             // Utils.Log($"({x},{y}) =>{colors[x][y]}", true);
 
-            paintImageWithColorGrid(colors, 10);
+            PaintImageWithColorGrid(colors, 10);
             // paintImageWithColorGrid(new []{new []{Color.Blue, Color.Red}, new []{Color.Green, Color.Brown}}, 50);
 
             Image.SetResolution(100, 100);

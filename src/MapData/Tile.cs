@@ -18,6 +18,7 @@ namespace PokemonSolver.MapData
         // public ushort TileNumber { get; }
         public byte MovementPermission { get; }
         public uint Block { get; }
+        public bool Flooded { get; set; }
 
         public bool Walkable => MovementPermission % 4 != 1; //1, 5, D...   
 

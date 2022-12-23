@@ -284,5 +284,35 @@ namespace PokemonSolver.Memory
             public const ushort LocalTileset = 4;
             public const ushort Tile = 2;
         }
+
+        public abstract class TilesetHeaderAddress
+        {
+            public const ushort Compressed = 0;
+            public const ushort Primary = 1;
+            public const ushort TilesetImage = 4;
+            public const ushort ColorPalettes = 8;
+            public const ushort Blocks = 12;
+            public const ushort AnimationRoutine = 16;
+            public const ushort BehaviourBackground = 20;
+        }
+
+        public abstract class TilesetHeaderSize
+        {
+            public const ushort Compressed = 1;
+            public const ushort Primary = 1;
+            public const ushort TilesetImage = 4;
+            public const ushort ColorPalettes = 4;
+            public const ushort Blocks = 4;
+            public const ushort AnimationRoutine = 4;
+            public const ushort BehaviourBackground = 4;
+            public const ushort Total = 24;
+        }
+
+        public abstract class PaletteSize
+        {
+            public const ushort SingleColor = 2;
+            public const ushort NumberOfColors = 16;
+            public const ushort Total = SingleColor * NumberOfColors;
+        }
     }
 }
