@@ -1,4 +1,6 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using BizHawk.Client.Common;
 using BizHawk.Common;
@@ -28,9 +30,9 @@ namespace PokemonSolver.Interaction
         // }
         // }
 
-        public OverworldEngine(IMemoryApi memoryMemoryApi)
+        private OverworldEngine(IMemoryApi memoryApi)
         {
-            _memoryApi = memoryMemoryApi;
+            _memoryApi = memoryApi;
             Maps = new List<Map>();
             Banks = new List<List<Map>>();
             // ComputeMaps();
@@ -144,9 +146,31 @@ namespace PokemonSolver.Interaction
             var dir = (Direction)rawDir;
 
             var pos = new Position(mapBank, mapIndex, x, y, dir, Altitude.Any);
-            
+
             // Utils.Log($"returning position {pos}");
             return pos; //TODO find altitude from memory
+        }
+
+        public void Flood(Position goal)
+        {
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+            goal.Flood();
+            Utils.Log($"Flooded {Position.FloodedPositions} positions in {stopwatch.ElapsedMilliseconds} ms");
+        }
+
+        private static OverworldEngine? _instance;
+
+        public static OverworldEngine GetInstance()
+        {
+            if (_instance == null)
+                throw new Exception("Overworld engine has not been initialized yet");
+            return _instance;
+        }
+
+        public static void Initialize(IMemoryApi memoryApi)
+        {
+            _instance = new OverworldEngine(memoryApi);
         }
     }
 }

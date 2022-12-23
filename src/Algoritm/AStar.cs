@@ -13,18 +13,16 @@ namespace PokemonSolver.Algoritm
 {
     public class AStar
     {
-        private readonly OverworldEngine _overworldEngine;
         private readonly int _maxQueueSize = 100000;
 
-        public AStar(OverworldEngine overworldEngine)
+        public AStar()
         {
-            _overworldEngine = overworldEngine;
         }
 
         [Benchmark]
         public void Bench()
         {
-            var start = _overworldEngine.GetCurrentPosition();
+            var start = OverworldEngine.GetInstance().GetCurrentPosition();
             var end = new Position(start.MapBank, start.MapIndex, start.X + 2, start.Y, start.Direction, start.Altitude);
             var node = Resolve(start, end);
             Utils.Log($"node : {node.Debug()}");
@@ -32,7 +30,7 @@ namespace PokemonSolver.Algoritm
 
         public Node<Map>? MapConSearch(Position start, Position goal)
         {
-            var root = new Node<Map>(_overworldEngine.GetMap(start), null);
+            var root = new Node<Map>(OverworldEngine.GetInstance().GetMap(start), null);
             var explored = new List<Node<Map>>();
             var toExplore = new Queue<Node<Map>>();
             toExplore.Enqueue(root);
@@ -47,7 +45,7 @@ namespace PokemonSolver.Algoritm
                 foreach (var connection in node.State.Connections)
                 {
                     if (!explored.Exists((n => n.State.Bank == connection.MapBank && n.State.MapIndex == connection.MapIndex)))
-                        toExplore.Enqueue(new Node<Map>(_overworldEngine.GetMap(connection), node));
+                        toExplore.Enqueue(new Node<Map>(OverworldEngine.GetInstance().GetMap(connection), node));
                 }
             }
 
@@ -58,7 +56,7 @@ namespace PokemonSolver.Algoritm
 
         private int ScoreFromMaps(Position p, Node<Map> mapsOnPath)
         {
-            var currentMap = _overworldEngine.GetMap(p);
+            var currentMap = OverworldEngine.GetInstance().GetMap(p);
             var penalty = 0;
             foreach (var ancestor in mapsOnPath.Ancestors(true))
             {
@@ -73,7 +71,7 @@ namespace PokemonSolver.Algoritm
 
         private Map? NextMapInPath(Position p, Node<Map> mapsOnPath)
         {
-            var currentMap = _overworldEngine.GetMap(p);
+            var currentMap = OverworldEngine.GetInstance().GetMap(p);
             Node<Map>? previous = null;
             foreach (var ancestor in mapsOnPath.Ancestors(true))
             {
@@ -97,7 +95,7 @@ namespace PokemonSolver.Algoritm
             }
 
             //check if goal is walkable
-            var goalMap = _overworldEngine.GetMap(goal);
+            var goalMap = OverworldEngine.GetInstance().GetMap(goal);
             if (!goalMap.MapData.GetTile(goal.X, goal.Y).Walkable)
             {
                 Utils.Log($"{goal} is not a walkable tile", true);
@@ -134,7 +132,7 @@ namespace PokemonSolver.Algoritm
                     return currentNode;
                 }
 
-                foreach (var p in currentNode.State.Neighbours())
+                foreach (var p in currentNode.State.Children())
                 {
                     // existsWatch.Start();
                     if (!explored.Exists(node => Equals(node.State, p)))
