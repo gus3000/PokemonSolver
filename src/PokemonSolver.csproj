@@ -13,6 +13,7 @@
     <ItemGroup>
         <PackageReference Include="BenchmarkDotNet" Version="0.13.2" />
         <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.0" PrivateAssets="all" />
+        <PackageReference Include="OpenCL.Net" Version="2.2.9" />
         <PackageReference Include="OptimizedPriorityQueue" Version="5.1.0" />
         <PackageReference Include="System.Text.Json" Version="6.0.5" />
         <Reference Include="System.Windows.Forms" />
@@ -20,6 +21,9 @@
         <Reference Include="BizHawk.Client.EmuHawk" HintPath="$(ProjectDir)../BizHawk/EmuHawk.exe" />
         <Reference Include="BizHawk.Common" HintPath="$(ProjectDir)../BizHawk/dll/BizHawk.Common.dll" />
         <Reference Include="BizHawk.WinForms.Controls" HintPath="$(ProjectDir)../BizHawk/dll/BizHawk.WinForms.Controls.dll" />
+    </ItemGroup>
+    <ItemGroup>
+      <None Include="Gpu\HLSL\multiply.cl" />
     </ItemGroup>
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
         <Message Text="DLL : $(ProjectDir)../BizHawk/dll/%(Filename)%(Extension) from @(AllDlls)" Condition="%(Identity) != 'bin\Debug\net48\BenchmarkDotNet.dll'" />

@@ -10,8 +10,10 @@ using BenchmarkDotNet.Running;
 using BizHawk.Client.Common;
 using BizHawk.Client.EmuHawk;
 using BizHawk.Common;
+using Microsoft.Extensions.Primitives;
 using PokemonSolver.Algoritm;
 using PokemonSolver.Form;
+using PokemonSolver.Gpu;
 using PokemonSolver.Image;
 using PokemonSolver.Image.Colors;
 using PokemonSolver.Image.Map;
@@ -134,12 +136,90 @@ namespace PokemonSolver
             // for (x = 0; x < map.MapData.Width; x++)
             //     Utils.Log($"map in ({x},{y}) : {map.GetNextMap(OverworldEngine.GetInstance(), x, y)?.Debug()}");
 
-            var mapData = OverworldEngine.GetInstance().GetCurrentMap()?.MapData;
+            // var mapData = OverworldEngine.GetInstance().GetCurrentMap()?.MapData;
             // Palette.DebugPalettes();
-            Tileset.DebugTilesets();
-            Utils.Log($"current tileset => global :{mapData?.GlobalTileset}", true);
-            Utils.Log($"     local :{mapData?.LocalTileset}", true);
-            SetVerbose(false);
+            // Tileset.DebugTilesets();
+            // Utils.Log($"current tileset => global :{mapData?.GlobalTileset}", true);
+            // Utils.Log($"     local :{mapData?.LocalTileset}", true);
+            // SetVerbose(false);
+            var gpu = new GpuHandler();
+            // const string level = "000000000000000000000000000000000000000\n" +
+            //                      "111111111111111111111111111111111111110\n" +
+            //                      "000000000000000000000000000000000000000\n" +
+            //                      "011111111111111111111111111111111111111\n" +
+            //                      "000000000000000000000000000000000000000\n" +
+            //                      "111111111111111111111111111111111111110\n" +
+            //                      "000000000000000000000000000000000000000\n" +
+            //                      "011111111111111111111111111111111111111\n" +
+            //                      "000000000000000000000000000000000000000\n" +
+            //                      "111111111111111111111111111111111111110\n" +
+            //                      "000000000000000000000000000000000000000\n" +
+            //                      "011111111111111111111111111111111111111\n" +
+            //                      "000000000000000000000000000000000000000\n" +
+            //                      "111111111111111111111111111111111111110\n" +
+            //                      "000000000000000000000000000000000000000\n" +
+            //                      "011111111111111111111111111111111111111\n" +
+            //                      "000000000000000000000000000000000000000\n" +
+            //                      "111111111111111111111111111111111111110\n" +
+            //                      "000000000000000000000000000000000000000\n" +
+            //                      "011111111111111111111111111111111111111\n" +
+            //                      "000000000000000000000000000000000000000";
+            //
+            // string[] levelLines = level.Split('\n');
+            // int height = levelLines.Length;
+            // int width = levelLines[0].Length;
+
+            // byte[] permissionBytes = new byte[width * height];
+
+            // var data = new int[width * height];
+            // var sb = new StringBuilder(width * height);
+            // for (var y = 0; y < height; y++)
+            // {
+                // for (var x = 0; x < width; x++)
+                // {
+                    // data[y * width + x] = -1;
+                    // permissionBytes[y * width + x] = (byte)(levelLines[y][x] - '0');
+                    // sb.Append(permissionBytes[y * width + x].ToString());
+                // }
+
+                // sb.Append('\n');
+            // }
+            
+            // data[4] = 0;
+
+            // Utils.Log("permission bytes :");
+            // Utils.Log(sb.ToString());
+
+            var map = OverworldEngine.GetInstance().GetCurrentMap();
+            int height = map.MapData.Height;
+            int width = map.MapData.Width;
+            var permissionBytes = (from tile in map.MapData.Tiles select tile.MovementPermission).ToArray();
+            
+            var endPosition = _endPositionControl.GetPosition();
+            var startPosition = _startPositionControl.GetPosition();
+            var endIndex = startPosition.Y * width + startPosition.X;
+            var data = (from i in Enumerable.Range(0,width * height) select -1).ToArray();
+            data[endIndex] = 0;
+            
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
+            var results = gpu.Execute(data, permissionBytes, width, endPosition.X, endPosition.Y);
+            Utils.Log($"goal : {endPosition}");
+            stopwatch.Stop();
+            var sbResults = new StringBuilder();
+            for (var y = 0; y < height; y++)
+            {
+                for (var x = 0; x < width; x++)
+                {
+                    sbResults.Append($"{results[y * width + x],3} ");
+                }
+                sbResults.Append("\n");
+            }
+            Utils.Log("Results :");
+            Utils.Log(sbResults.ToString());
+
+
+            Utils.Log($"gpu time : {stopwatch.ElapsedMilliseconds}ms");
         }
 
         private void Compute()

@@ -13,7 +13,8 @@ namespace PokemonSolver.Memory
 {
     public abstract class Utils
     {
-        public static readonly int MaxLineLength = 120;
+        public const int MaxLineLength = 120;
+
         public static readonly string[] CHARSET = new string[]
         {
             " ",
@@ -463,7 +464,7 @@ namespace PokemonSolver.Memory
             foreach (var c in msg)
             {
                 sb.Append(c);
-                if (sb.Length < MaxLineLength)
+                if (sb.Length < MaxLineLength && c != '\n')
                     continue;
                 BizHawk.Common.Log.Note("Debug" + (verbose ? "-verbose" : ""), sb.ToString());
                 sb.Clear();
