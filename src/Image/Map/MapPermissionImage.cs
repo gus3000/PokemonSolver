@@ -4,7 +4,7 @@ namespace PokemonSolver.Image.Map
 {
     public class MapPermissionImage : MapImage
     {
-        public MapPermissionImage(MapData.Map map) : base(map)
+        public MapPermissionImage(Mapping.Map map) : base(map)
         {
             DirectoryName += "/Permission";
             PaintWith(map.MapData.Width, map.MapData.Height, 16,

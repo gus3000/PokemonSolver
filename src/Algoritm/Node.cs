@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using PokemonSolver.Debug;
-using PokemonSolver.MapData;
 using Priority_Queue;
 
 namespace PokemonSolver.Algoritm

@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Drawing;
+﻿using System.Drawing;
 using BizHawk.Client.Common;
 using PokemonSolver.Image.Tileset;
 using PokemonSolver.Memory;
 using PokemonSolver.Memory.Local;
 
-namespace PokemonSolver.MapData
+namespace PokemonSolver.Mapping
 {
     public class MapData
     {

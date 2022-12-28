@@ -7,7 +7,7 @@ namespace PokemonSolver.Image.Map
 {
     public class MapPreviewImage : ImageHandler
     {
-        public MapPreviewImage(MapData.Map map, List<KeyValuePair<Position, Color>> customColors)
+        public MapPreviewImage(Mapping.Map map, List<KeyValuePair<Position, Color>> customColors)
         {
             Image = new Bitmap(map.MapData.Width, map.MapData.Height);
             // Utils.Log($"Loading map image with size ({Image.Width},{Image.Height})", true);

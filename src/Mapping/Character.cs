@@ -1,4 +1,4 @@
-﻿namespace PokemonSolver.MapData
+﻿namespace PokemonSolver.Mapping
 {
     public class Character
     {

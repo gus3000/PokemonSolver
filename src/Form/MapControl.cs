@@ -6,7 +6,7 @@ using PokemonSolver.Algoritm;
 using PokemonSolver.Image;
 using PokemonSolver.Image.Map;
 using PokemonSolver.Interaction;
-using PokemonSolver.MapData;
+using PokemonSolver.Mapping;
 using PokemonSolver.Memory;
 
 namespace PokemonSolver.Form

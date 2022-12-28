@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using PokemonSolver.Algoritm;
+﻿using System.Collections.Generic;
 using PokemonSolver.Debug;
 using PokemonSolver.Memory;
-using Type = PokemonSolver.Memory.Type;
 
-namespace PokemonSolver.MapData
+namespace PokemonSolver.Mapping
 {
     public class Tile : IShortStringable
     {

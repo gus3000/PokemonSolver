@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using PokemonSolver.Debug;
 using PokemonSolver.Interaction;
-using PokemonSolver.MapData;
+using PokemonSolver.Mapping;
 using PokemonSolver.Memory;
 
 namespace PokemonSolver.Algoritm
@@ -23,7 +23,7 @@ namespace PokemonSolver.Algoritm
 
         public bool Valid => X >= 0 && X < MapData.Width && Y >= 0 && Y < MapData.Height;
         public Map Map => OverworldEngine.GetInstance().GetMap(this);
-        public MapData.MapData MapData => Map.MapData;
+        public Mapping.MapData MapData => Map.MapData;
 
         public Position(int bank, int index, int x, int y, Direction direction, Altitude altitude)
         {
@@ -216,13 +216,14 @@ namespace PokemonSolver.Algoritm
             // 10 -> 3C -> 10 if alt high
         }
 
-        private void FixMap()
+        public void FixMap()
         {
-            // var map = _overworldEngine.getMap(MapBank, MapIndex).GetNextMap(_overworldEngine, X, Y);
+            // var map = _overworldEngine.getMap(MapBank, MapIndex).GetNextMap(X, Y);
             // if (map == null)
             // return;
             // MapBank = map.Bank;
             // MapIndex = map.MapIndex;
+            Utils.Log($"Fixing map on pos {this}");
             foreach (var con in OverworldEngine.GetInstance().GetMap(this).Connections)
             {
                 var map = OverworldEngine.GetInstance().GetMap(con);
@@ -276,6 +277,11 @@ namespace PokemonSolver.Algoritm
         public override string ToString()
         {
             return $"Position(({MapBank},{MapIndex}) : {X},{Y},{Direction})";
+        }
+
+        public static Position operator +(Position pos, Coordinates coords)
+        {
+            return new Position(pos.MapBank, pos.MapIndex, pos.X + coords.X, pos.Y + coords.Y, pos.Direction, pos.Altitude);
         }
     }
 }

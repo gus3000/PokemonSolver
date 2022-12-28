@@ -8,5 +8,7 @@ namespace PokemonSolver.Algoritm
         Up = 2,
         Left = 3,
         Right = 4,
+        Dive = 5,
+        Emerge = 6,
     }
 }

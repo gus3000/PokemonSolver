@@ -2,7 +2,6 @@
 using System.Drawing;
 using System.Text;
 using BizHawk.Client.Common;
-using Microsoft.Extensions.Primitives;
 using PokemonSolver.Memory;
 using PokemonSolver.Memory.Local;
 

@@ -5,7 +5,7 @@ using System.Linq;
 using System.Windows.Forms;
 using PokemonSolver.Algoritm;
 using PokemonSolver.Interaction;
-using PokemonSolver.MapData;
+using PokemonSolver.Mapping;
 using PokemonSolver.Memory;
 
 namespace PokemonSolver.Form

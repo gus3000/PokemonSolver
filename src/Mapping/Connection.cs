@@ -5,7 +5,7 @@ using PokemonSolver.Algoritm;
 using PokemonSolver.Memory;
 using PokemonSolver.Memory.Local;
 
-namespace PokemonSolver.MapData
+namespace PokemonSolver.Mapping
 {
     public class Connection
     {
@@ -23,6 +23,7 @@ namespace PokemonSolver.MapData
             MapIndex = (byte)Utils.GetIntegerFromByteArray(bytes, MapConnectionAddress.MapIndex, MapConnectionSize.MapIndex);
         }
 
-        public string Debug() => $"Connection({Direction},{Offset},{MapBank},{MapIndex})";
+        public override string ToString() => $"Connection({Direction},{Offset},{MapBank},{MapIndex})";
+        public string Debug() => ToString();
     }
 }

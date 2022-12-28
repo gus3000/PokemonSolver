@@ -5,7 +5,6 @@ using System.Linq;
 using System.Text;
 using BizHawk.Client.Common;
 using BizHawk.Common;
-using Microsoft.Extensions.Primitives;
 using PokemonSolver.Memory.Global;
 using PokemonSolver.Memory.Global.Rom;
 
@@ -469,7 +468,23 @@ namespace PokemonSolver.Memory
                 BizHawk.Common.Log.Note("Debug" + (verbose ? "-verbose" : ""), sb.ToString());
                 sb.Clear();
             }
+
             BizHawk.Common.Log.Note("Debug" + (verbose ? "-verbose" : ""), sb.ToString());
+        }
+
+        public static void Log<T>(IList<T>? array, bool verbose = false)
+        {
+            if (array == null)
+            {
+                Log("null");
+                return;
+            }
+            
+            Log($"{array.GetType()} of {array.Count} elements :");
+            foreach (var o in array)
+            {
+                Log($"\t{o}", verbose);
+            }
         }
 
         public static void Error(string? msg)

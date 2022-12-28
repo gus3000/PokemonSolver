@@ -3,9 +3,8 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Numerics;
-using BenchmarkDotNet.Attributes;
 using PokemonSolver.Interaction;
-using PokemonSolver.MapData;
+using PokemonSolver.Mapping;
 using PokemonSolver.Memory;
 using Priority_Queue;
 
@@ -19,7 +18,6 @@ namespace PokemonSolver.Algoritm
         {
         }
 
-        [Benchmark]
         public void Bench()
         {
             var start = OverworldEngine.GetInstance().GetCurrentPosition();

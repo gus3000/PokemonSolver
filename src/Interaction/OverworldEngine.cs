@@ -1,16 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
 using BizHawk.Client.Common;
-using BizHawk.Common;
 using PokemonSolver.Algoritm;
-using PokemonSolver.MapData;
 using PokemonSolver.Memory;
-using PokemonSolver.Memory.Global;
-using PokemonSolver.Memory.Global.Ram;
-using PokemonSolver.Memory.Global.Rom;
-using PokemonSolver.Memory.Local;
+using PokemonSolver.Mapping;
 using Address = PokemonSolver.Memory.Global.Rom.Address;
 
 namespace PokemonSolver.Interaction
@@ -87,18 +81,22 @@ namespace PokemonSolver.Interaction
                 mapBankPointer += 4;
                 // break;
             }
+            
+            foreach(var map in Maps)
+                map.InitWarps();
 
             _memoryApi.UseMemoryDomain(oldDomain);
         }
 
-        public Map GetMap(int bank, int number)
+        public Map GetMap(int bank, int index)
         {
             // Utils.Log($"Fetching map[{bank}][{number}]", true);
-            return Banks[bank][number];
+            return Banks[bank][index];
         }
 
         public Map GetMap(Position p)
         {
+            Utils.Log($"Bank count : {Banks.Count}");
             return GetMap(p.MapBank, p.MapIndex);
         }
 
