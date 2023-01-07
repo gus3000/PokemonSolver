@@ -145,30 +145,50 @@ namespace PokemonSolver
             // overworldMapPermissionImage.Save();
             // var overworldMapPreviewImage = new OverworldMapPreviewImage(overworldMap);
             // overworldMapPreviewImage.Save();
-            
+
             // var startPosition = _startPositionControl.GetPosition();
             // var endPosition = _endPositionControl.GetPosition();
+            //
+            // // var gpuAstar = new GPUAStar();
+            // // var node = gpuAstar.Resolve(startPosition,endPosition);
+            //
+            // var currentMap = OverworldEngine.GetInstance().GetCurrentMap();
+            // if (currentMap == null)
+            //     return;
+            // currentMap.InitWarps();
+            // var warps = currentMap?.Warps;
+            //
+            // Utils.Log(warps);
+            // // return;
+            //
+            // var gpu = new GpuTest();
+            //
+            // var data = new int[] { 1, 2, 3 };
+            // var results = gpu.Execute(data);
+            // for (int i = 0; i < 3; i++)
+            // {
+            //     Utils.Log($"[{i}] {data[i]} => {results[i]}");
+            // }
 
-            // var gpuAstar = new GPUAStar();
-            // var node = gpuAstar.Resolve(startPosition,endPosition);
+            // var gpuImageTest = new GpuTestImage();
+            // var inputImage = $"{Environment.CurrentDirectory}/../Images/pouet.png";
+            // var outputImage = $"{Environment.CurrentDirectory}/../Images/pouet_grayscale.png";
+            // gpuImageTest.ImagingTest(inputImage, outputImage);
 
-            var currentMap = OverworldEngine.GetInstance().GetCurrentMap();
-            if (currentMap == null)
-                return;
-            currentMap.InitWarps();
-            var warps = currentMap?.Warps;
+            var gpuMapImage = new GpuMapImage();
+            gpuMapImage.GetImage();
+            // var pouet = gpuMapImage.GetImage();
+            // pouet.Save($"{Environment.CurrentDirectory}/Images/pouetpouet.png");
             
-            Utils.Log(warps);
-            return;
             
-            // var gpu = new GpuHandler();
+            // var gpu = new GpuFlood();
             // var map = OverworldEngine.GetInstance().GetCurrentMap();
             // int height = map.MapData.Height;
             // int width = map.MapData.Width;
             // var permissionBytes = (from tile in map.MapData.Tiles select tile.MovementPermission).ToArray();
             //
             // var endIndex = startPosition.Y * width + startPosition.X;
-            // var data = (from i in Enumerable.Range(0,width * height) select -1).ToArray();
+            // var data = (from i in Enumerable.Range(0, width * height) select -1).ToArray();
             // data[endIndex] = 0;
             //
             // var stopwatch = new Stopwatch();
@@ -183,8 +203,10 @@ namespace PokemonSolver
             //     {
             //         sbResults.Append($"{results[y * width + x],3} ");
             //     }
+            //
             //     sbResults.Append("\n");
             // }
+            //
             // Utils.Log("Results :");
             // Utils.Log(sbResults.ToString());
             //
@@ -207,7 +229,6 @@ namespace PokemonSolver
             // Position characterPosition = OverworldEngine.GetCurrentPosition();
             // Utils.Log($"char position : {characterPosition}");
 
-            //TODO same with custom controls
             var startPosition = _startPositionControl.GetPosition();
             var endPosition = _endPositionControl.GetPosition();
 

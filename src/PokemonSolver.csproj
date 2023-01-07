@@ -22,7 +22,8 @@
         <Reference Include="BizHawk.WinForms.Controls" HintPath="$(ProjectDir)../BizHawk/dll/BizHawk.WinForms.Controls.dll" />
     </ItemGroup>
     <ItemGroup>
-      <None Include="Gpu\HLSL\multiply.cl" />
+      <None Include="Gpu\HLSL\flood.cl" />
+      <None Include="Gpu\HLSL\test.cl" />
     </ItemGroup>
     <Target Name="PostBuild" AfterTargets="PostBuildEvent">
         <Message Text="DLL : $(ProjectDir)../BizHawk/dll/%(Filename)%(Extension) from @(AllDlls)" Condition="%(Identity) != 'bin\Debug\net48\BenchmarkDotNet.dll'" />
